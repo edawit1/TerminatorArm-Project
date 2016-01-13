@@ -1,0 +1,55 @@
+-- Code to display basic functionality on 7 seg display --
+
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+entity Explore_FPGA is
+	port (pose : in std_logic_vector (3 downto 0);
+			ssd0, ssd1, ssd2, ssd3, ssd4, ssd5, ssd6, ssd7 : out std_logic_vector (6 downto 0));
+end Explore_FPGA;
+
+
+architecture arch of Explore_FPGA is
+begin
+		process (pose) is 
+		begin
+			if (pose = "0000") then --0 (Rest)
+				ssd7 <= "1111111"; ssd6 <= "1111111"; ssd5 <= "1111111"; ssd4 <= "1111111";
+				ssd3 <= "1001110"; ssd2 <= "0000100"; ssd1 <= "0010010"; ssd0 <= "0000111";
+							
+			elsif (pose="0001") then --1 (Fist)
+				ssd7 <= "1111111"; ssd6 <= "1111111"; ssd5 <= "1111111"; ssd4 <= "1111111";
+				ssd3 <= "0001110"; ssd2 <= "1111001"; ssd1 <= "0010010"; ssd0 <= "0000111";
+				
+			elsif (pose="0010") then --2 (Thumb)
+				ssd7 <= "1111111"; ssd6 <= "1111111"; ssd5 <= "0000111"; ssd4 <= "0001011";
+				ssd3 <= "1000001"; ssd2 <= "1001100"; ssd1 <= "1011000"; ssd0 <= "0000011";
+					
+			elsif (pose="0011") then --3  (Index)
+				ssd7 <= "1111111"; ssd6 <= "1111111"; ssd5 <= "1111001"; ssd4 <= "1001000";
+				ssd3 <= "0100001"; ssd2 <= "0000100"; ssd1 <= "1110000"; ssd0 <= "1000110";
+				
+			elsif (pose="0100") then --4  (Middle)
+				ssd7 <= "1001000"; ssd6 <= "1001000"; ssd0 <= "1111111"; ssd5 <= "1111001";
+				ssd4 <= "0100001"; ssd3 <= "0100001"; ssd2 <= "1000111"; ssd1 <= "0000100";
+						
+			elsif (pose="0101") then --5  (Ring)
+				ssd7 <= "1111111"; ssd6 <= "1111111"; ssd5 <= "1111111"; ssd4 <= "1111111";
+				ssd3 <= "1001110"; ssd2 <= "1111001"; ssd1 <= "1001000"; ssd0 <= "0010000";
+				
+			elsif (pose="0110") then --6  (Pinky)
+				ssd7 <= "1111111"; ssd6 <= "1111111"; ssd5 <= "1111111"; ssd4 <= "0001100";
+				ssd3 <= "1111001"; ssd2 <= "1001000"; ssd1 <= "0000111"; ssd0 <= "0010001";
+				
+			elsif (pose="0111") then --7  (Spread)
+				ssd7 <= "1111111"; ssd6 <= "1111111"; ssd5 <= "0010010"; ssd4 <= "0001100";
+				ssd3 <= "1001110"; ssd2 <= "0000100"; ssd1 <= "0001000"; ssd0 <= "0100001";
+				
+			else                     -- (other Gesture)
+				ssd7 <= "1111111"; ssd6 <= "0010010"; ssd5 <= "0000100"; ssd4 <= "0010010";
+				ssd3 <= "0000111"; ssd2 <= "1000001"; ssd1 <= "1001110"; ssd0 <= "0000100";
+				
+			end if;
+		end process;
+	
+end arch;
