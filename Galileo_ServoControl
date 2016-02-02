@@ -1,0 +1,92 @@
+// Terminator Intel galileo code
+
+#include <Servo.h> 
+ 
+int thumbpose = 0, indexpose = 1, midpose = 2, ringpose = 3, pinkypose = 4, handpose = 5;  // identifies input gesture   
+Servo thumbF, indexF, midF, ringF, pinkyF, handG;         // Servo object (max. 8 servo objects can be created)
+int thumbinput, indexinput, midinput, ringinput, pinkyinput, handinput;
+
+void setup() 
+{ 
+  Serial.begin(9600);           // set baud-rate
+  SetpinMode();
+  // attaches the servo on pin# to the servo object 
+  thumbF.attach(9); indexF.attach(10); midF.attach(11); midF.attach(3); pinkyF.attach(5); handG.attach(6);              
+} 
+ 
+ 
+void loop() 
+{ 
+  thumbinput = analogRead(thumbpose);indexinput = analogRead(indexpose);midinput = analogRead(midpose); 
+  ringinput = analogRead(ringpose);pinkyinput = analogRead(pinkypose);handinput = analogRead(handpose);
+  Serial.println("Thumb Input: "); Serial.println(thumbinput);Serial.println("Index Input: "); Serial.println(indexinput);
+  Serial.println("Mid Input: "); Serial.println(midinput);Serial.println("Ring Input: "); Serial.println(ringinput);  
+  Serial.println("Hand Input: "); Serial.println(handinput);
+  delay (2000);
+  
+  if (thumbinput > 600){
+  for(int pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    thumbF.write(pos);               // tell servo to go to position in variable 'pos' 
+    delay(0.25);}                       // waits  for the servo to reach the position 
+  for(int pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    thumbF.write(pos);              
+    delay(0.25);}                  
+  } 
+  
+  else if (indexinput > 600){
+  for(int pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    indexF.write(pos);               // tell servo to go to position in variable 'pos' 
+    delay(0.25);}                       // waits  for the servo to reach the position 
+  for(int pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    indexF.write(pos);              
+    delay(0.25);}                  
+  } 
+  else if (midinput > 600){
+  for(int pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    midF.write(pos);               // tell servo to go to position in variable 'pos' 
+    delay(0.25);}                       // waits  for the servo to reach the position 
+  for(int pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    midF.write(pos);              
+    delay(0.25);}                  
+  } 
+  else if (ringinput > 600){
+  for(int pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    ringF.write(pos);               // tell servo to go to position in variable 'pos' 
+    delay(0.25);}                       // waits  for the servo to reach the position 
+  for(int pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    ringF.write(pos);              
+    delay(0.25);}                  
+  }   
+  else if (pinkyinput > 600){
+  for(int pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    pinkyF.write(pos);               // tell servo to go to position in variable 'pos' 
+    delay(0.25);}                       // waits  for the servo to reach the position 
+  for(int pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    pinkyF.write(pos);              
+    delay(0.25);}                  
+  } 
+  else if (handinput > 600){
+  for(int pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    handG.write(pos);               // tell servo to go to position in variable 'pos' 
+    delay(0.25);}                       // waits  for the servo to reach the position 
+  for(int pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    handG.write(pos);              
+    delay(0.25);}                  
+  } 
+  
+  else{}         // do nothing if no input pose is detected
+  
+  delay (2000);
+  //keeprunning();
+
+} 
+
+
+void SetpinMode()
+{
+  pinMode(thumbpose, INPUT); pinMode(indexpose, INPUT); pinMode(midpose, INPUT); 
+  pinMode(ringpose, INPUT); pinMode(pinkypose, INPUT); pinMode(handpose, INPUT);
+}
+
+void keeprunning()
+{}
