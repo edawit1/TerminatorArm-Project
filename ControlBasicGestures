@@ -1,100 +1,106 @@
--- Code to display basic functionality on 7 seg display & control arm --
--- Terminator Arm
+// Terminator Intel galileo code
+// Warning: It is NOT advised to uncomment all of the print commands, as you can run out of heap space/RAM 
 
 
-library IEEE;
-use IEEE.std_logic_1164.all;
-use IEEE.numeric_std.all;
-use IEEE.std_logic_unsigned.all;
 
-entity Explore_FPGA is
-	generic(N: integer := 16);
-	port (clk, reset: in std_logic; 
-			pose: in std_logic_vector (3 downto 0);      -- input pose
-			display_ssd0, display_ssd1, display_ssd2, display_ssd3, display_ssd4, display_ssd5, display_ssd6, display_ssd7 : out std_logic_vector (6 downto 0);   -- 7 segment display pins
-			pwmThumb, pwmIndex, pwmMid, pwmRing, pwmPinky, pwmHand: out std_logic);
-end Explore_FPGA;
+#include <Servo.h> 
+#include <Wstring.h>
+// Keep a string inside of PROGMEM and prevent it from consuming RAM at run-time
+#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
+
+int thumbpose = A0, indexpose = A1, midpose = A2, ringpose = A3, pinkypose = A4, handpose = A5;  // identifies input gesture   
+Servo thumbF, indexF, midF, ringF, pinkyF, handG;         // Servo object (max. 8 servo objects can be created)
+int thumbinput, indexinput, midinput, ringinput, pinkyinput, handinput;
+int pos;
+
+void setup() 
+{ 
+  Serial.println(F("Seting up!"));
+  Serial.begin(9600);           // set baud-rate
+  SetpinMode();
+  // attaches the servo on pin# to the servo object 
+  thumbF.attach(3); indexF.attach(5); midF.attach(6); midF.attach(9); pinkyF.attach(10); handG.attach(11);              
+} 
  
+ 
+void loop() 
+{ 
+  thumbinput = analogRead(thumbpose);indexinput = analogRead(indexpose);midinput = analogRead(midpose);ringinput = analogRead(ringpose);pinkyinput = analogRead(pinkypose); handinput = analogRead(handpose);
 
-architecture arch of Explore_FPGA is
-
-begin
-
--- process to control output pose selection 
-process (pose, reset, clk) is 
-begin
-
-		if (pose = "0000") then --0 (Rest)
-			-- print 
-			display_ssd7 <= "1111111"; display_ssd6 <= "1111111"; display_ssd5 <= "1111111"; display_ssd4 <= "1111111";
-			display_ssd3 <= "1001110"; display_ssd2 <= "0000100"; display_ssd1 <= "0010010"; display_ssd0 <= "0000111";
-		
-			pwmThumb <= '0'; pwmIndex <= '0'; pwmMid <= '0'; pwmRing <= '0'; pwmPinky <= '0'; pwmHand <= '0'; 
-			
-		elsif (pose="0001") then --1 (Fist)
-			-- print 
-			display_ssd7 <= "1111111"; display_ssd6 <= "1111111"; display_ssd5 <= "1111111"; display_ssd4 <= "1111111";
-			display_ssd3 <= "0001110"; display_ssd2 <= "1111001"; display_ssd1 <= "0010010"; display_ssd0 <= "0000111";
-		
-			pwmThumb <= '0'; pwmIndex <= '0'; pwmMid <= '0'; pwmRing <= '0'; pwmPinky <= '0'; pwmHand <= '0'; 
-			
-		elsif (pose="0010") then --2 (Thumb)
-			-- print
-			display_ssd7 <= "1111111"; display_ssd6 <= "1111111"; display_ssd5 <= "0000111"; display_ssd4 <= "0001011";
-			display_ssd3 <= "1000001"; display_ssd2 <= "1001100"; display_ssd1 <= "1011000"; display_ssd0 <= "0000011";
-		
-			pwmThumb <= '1'; pwmIndex <= '0'; pwmMid <= '0'; pwmRing <= '0'; pwmPinky <= '0'; pwmHand <= '0'; 
-			
-		elsif (pose="0011") then --3  (Index)
-			-- print
-			display_ssd7 <= "1111111"; display_ssd6 <= "1111111"; display_ssd5 <= "1111001"; display_ssd4 <= "1001000";
-			display_ssd3 <= "0100001"; display_ssd2 <= "0000100"; display_ssd1 <= "1110000"; display_ssd0 <= "1000110";
-		
-			pwmThumb <= '0'; pwmIndex <= '1'; pwmMid <= '0'; pwmRing <= '0'; pwmPinky <= '0'; pwmHand <= '0'; 
-			
-		elsif (pose="0100") then --4  (Middle)
-			-- print
-			display_ssd7 <= "1001000"; display_ssd6 <= "1001000"; display_ssd0 <= "1111111"; display_ssd5 <= "1111001";
-			display_ssd4 <= "0100001"; display_ssd3 <= "0100001"; display_ssd2 <= "1000111"; display_ssd1 <= "0000100";
-		
-			pwmThumb <= '0'; pwmIndex <= '0'; pwmMid <= '1'; pwmRing <= '0'; pwmPinky <= '0'; pwmHand <= '0'; 
-			
-		elsif (pose="0101") then --5  (Ring)
-			-- print
-			display_ssd7 <= "1111111"; display_ssd6 <= "1111111"; display_ssd5 <= "1111111"; display_ssd4 <= "1111111";
-			display_ssd3 <= "1001110"; display_ssd2 <= "1111001"; display_ssd1 <= "1001000"; display_ssd0 <= "0010000";
-		
-			pwmThumb <= '0'; pwmIndex <= '0'; pwmMid <= '0'; pwmRing <= '1'; pwmPinky <= '0'; pwmHand <= '0'; 
-			
-		elsif (pose="0110") then --6  (Pinky)
-			-- print
-			display_ssd7 <= "1111111"; display_ssd6 <= "1111111"; display_ssd5 <= "1111111"; display_ssd4 <= "0001100";
-			display_ssd3 <= "1111001"; display_ssd2 <= "1001000"; display_ssd1 <= "0000111"; display_ssd0 <= "0010001";
-		
-			pwmThumb <= '0'; pwmIndex <= '0'; pwmMid <= '0'; pwmRing <= '0'; pwmPinky <= '1'; pwmHand <= '0'; 
-			
-		elsif (pose="0111") then --7  (Spread)
-			-- print
-			display_ssd7 <= "1111111"; display_ssd6 <= "1111111"; display_ssd5 <= "0010010"; display_ssd4 <= "0001100";
-			display_ssd3 <= "1001110"; display_ssd2 <= "0000100"; display_ssd1 <= "0001000"; display_ssd0 <= "0100001";
-		
-			pwmThumb <= '0'; pwmIndex <= '0'; pwmMid <= '0'; pwmRing <= '0'; pwmPinky <= '0'; pwmHand <= '1'; 
-			
-		else                     -- (other Gesture)
-			-- print
-			display_ssd7 <= "1111111"; display_ssd6 <= "0010010"; display_ssd5 <= "0000100"; display_ssd4 <= "0010010";
-			display_ssd3 <= "0000111"; display_ssd2 <= "1000001"; display_ssd1 <= "1001110"; display_ssd0 <= "0000100";
-		
-			pwmThumb <= '0'; pwmIndex <= '0'; pwmMid <= '0'; pwmRing <= '0'; pwmPinky <= '0'; pwmHand <= '0'; 
-			
-		end if;
-end process; 
-	
-end arch;
+  Serial.println(F("-------------------------"));
+  //delay(2000);
+  
+  // Print Analog reads
+  //Serial.print("ThumbPose: "); Serial.println(thumbinput);
+  //Serial.print("IndexPose: "); Serial.println(indexinput);
+  //Serial.print("MidPose: "); Serial.println(midinput);
+  //Serial.print("RingPose: "); Serial.println(ringinput);
+  //Serial.print("PinkyPose: "); Serial.println(pinkyinput);
+  //Serial.print("HandPose: "); Serial.println(handinput);
+  
+  ServoController();
+  
+  delay(1000);
+} 
 
 
 
+void ServoController()
+{  
+  if (thumbinput > 700){
+        Serial.println(F("(*** Thumb finger Gesture detected! ***)")); Serial.println(F("(Moving Terminator Thumb!)"));
+  for(pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    thumbF.write(pos); delay(25);}   // Tells servo to go to position & waits  for the servo to reach the position 
+  for(pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    thumbF.write(pos); delay(25);}                  
+  } 
+  else if (indexinput > 1020){
+        Serial.println(F("(Index finger Gesture detected!)"));
+  for(pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    indexF.write(pos); delay(25);}
+  for(pos = 180; pos>=1; pos-=1){   
+    indexF.write(pos); delay(25);}                  
+  } 
+  else if (midinput  > 1020){
+        Serial.println(F("(Middle finger Gesture detected!)"));
+  for(pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    midF.write(pos);               // tell servo to go to position in variable 'pos' 
+    delay(25);}                       // waits  for the servo to reach the position 
+  for(pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    midF.write(pos);              
+    delay(25);}        
+  } 
+  else if (ringinput > 1020){
+        Serial.println(F("(Ring finger Gesture detected!)"));
+  for(pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    ringF.write(pos);               // tell servo to go to position in variable 'pos' 
+    delay(25);}                       // waits  for the servo to reach the position 
+  for(pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    ringF.write(pos);              
+    delay(25);}                  
+  }   
+  else if (pinkyinput > 1020){
+     Serial.println(F("(Pinky finger Gesture detected!)"));
+  for(pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    pinkyF.write(pos);               // tell servo to go to position in variable 'pos' 
+    delay(25);}                       // waits  for the servo to reach the position 
+  for(pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    pinkyF.write(pos);              
+    delay(25);}                  
+  } 
+  else if (handinput > 1020){
+    Serial.println(F("(Hand Gesture detected!)"));
+  for(pos = 0; pos < 180; pos += 1){   // goes from 0 degrees to 180 degrees in steps of 1 degree 
+    handG.write(pos); delay(25);}                       
+  for(pos = 180; pos>=1; pos-=1){     // goes from 180 degrees to 0 degrees                                
+    handG.write(pos); delay(25);}                  
+  } 
+  
+  else {Serial.println(F("(No gesture detected!)"));}         // do nothing if no input pose is detected}
+}
 
-
-
-
+void SetpinMode()
+{
+  pinMode(thumbpose, INPUT); pinMode(indexpose, INPUT); pinMode(midpose, INPUT); 
+  pinMode(ringpose, INPUT); pinMode(pinkypose, INPUT); pinMode(handpose, INPUT);
+}
