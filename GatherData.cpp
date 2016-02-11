@@ -92,7 +92,7 @@ public:
 };
 
 
-int main(int argc, char** argv)
+int main()
 {
 	// Declare & open infile 
 	std::ifstream Serialfile;    
