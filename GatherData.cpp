@@ -1,5 +1,7 @@
 // Modified Version of emg-sample-data.cpp (Copyright (C) 2013-2014 Thalmic Labs Inc. Distributed under the Myo SDK license agreement, LICENSE.txt)
+// By: Ayotunde Odejayi 
 // Howard University Terminator Arm Senior Design 2015.
+// 
 
 // Dependencies:
 // 1. MyoConnect
@@ -10,8 +12,13 @@
 // EMG streaming is only supported for one Myo at a time
 // Terminator Myo MAC address: db-fa-0c-69-14-78 (Can be used alternatively instead of MyoConnect to attach our Myo to a Hub)
 // http://diagnostics.myo.com/ provides diagnostic data of Myo (connected in MyoConnect) on a pc 
-// NB: Replacing system("cls") is advised.
+// NB: Replacing system("cls") is recommended and advised.
 
+
+// #define _USE_MATH_DEFINES
+#include <cmath>
+#include <iomanip>
+#include <algorithm>
 #include <array>
 #include <iostream>
 #include <sstream>
@@ -19,24 +26,26 @@
 #include <string>
 #include <fstream>
 #include "windows.h"   // contains Sleep library
+#include <time.h>
 
 #include <myo/myo.hpp>            // Myo default header library
 
 // DataCollector class inheriting member functions from myo::DeviceListener
 class DataCollector : public myo::DeviceListener {
 public:
-	DataCollector(): emgSamples()
+	DataCollector() : emgSamples()
 	{}
 
 	// onUnpair() is called whenever the Myo is disconnected from Myo Connect by the user
 	void onUnpair(myo::Myo* myo, uint64_t timestamp)
 	{
 		// We've lost our Myo.
-		// Let's clean up some leftover state.
+		// Zeros are seen in output file if there was a disconnect so test can be repeated
 		emgSamples.fill(0);
 	}
 
 	// onEmgData() is called whenever a paired Myo has provided new EMG data, and EMG streaming is enabled
+	// Classifier output data
 	void onEmgData(myo::Myo* myo, uint64_t timestamp, const int8_t* emg)
 	{
 		for (int i = 0; i < 8; i++) {
@@ -53,7 +62,7 @@ public:
 	// There are other virtual functions in DeviceListener that we could override here, like onAccelerometerData()
 	// For this application, the functions overridden above are sufficient
 	std::string SerialIndex, update = "gesture";
-	std::ofstream TerminatorFile;
+	std::ofstream TerminatorFile, RawEmgFile, ClassifierFile;
 	std::string filepath = "C:\\Users\\Ayotunde\\Google Drive\\Team Terminator\\Data Analysis\\EMGClassifierData\\TeamTerminatorData";  
 	int NewLineflag = 0;
 
@@ -74,7 +83,7 @@ public:
 		// write out the EMG classifier data
 		for (size_t i = 0; i < emgSamples.size(); i++) {
 			std::ostringstream oss;
-			oss << static_cast<int>(emgSamples[i]);
+			oss << static_cast<int>(emgSamples[i]);        // convert 8-bit array into int
 			std::string emgString = oss.str();
 			
 			if (NewLineflag == 1){
@@ -106,7 +115,7 @@ int main()
 	// We catch any exceptions that might occur below -- see the catch statement for more details
 	try {
 
-		// First, we create a Hub without any application identifier, the Hub provides access to one or more Myos
+		// First, we create a Hub without any application identifier (I deemed it unnecessary), the Hub provides access to one or more Myos
 		myo::Hub hub("");
 
 		std::cout << "Attempting to find HU Terminator Myo..." << std::endl;
@@ -114,7 +123,12 @@ int main()
 		// Next, we attempt to find a Myo to use. If a Myo is already paired in Myo Connect, this will return that Myo immediately
 		// waitForMyo() takes a timeout value in milliseconds. We try to find Terminator Myo for 10 seconds, and
 		// if that fails, the function will return a null pointer
-		myo::Myo* myo = hub.waitForMyo(10000);
+		myo::Myo* myo = hub.waitForMyo(0); //  Times-out until a Myo is found!
+		
+		///////////////////////// To-do: CONNECT TERMINATOR MYO BY MAC ADDRESS AND KEEP UNLOCKED //////////////////////////////////////////////////////
+		hub.setLockingPolicy(hub.lockingPolicyNone);      // Keep Terminator Myo unlocked
+		//Hub::a               attachByMacAddress(String macAddress)
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		// If waitForMyo() returned a null pointer, we failed to find our Myo, so exit with an error message
 		if (!myo) {
@@ -132,7 +146,7 @@ int main()
 		// Next we construct an instance of our DeviceListener, so that we can register it with the Hub
 		DataCollector collector;
 		
-		// Generate index of subject for file writing purposes
+		// Grab index of subject for file-writing purposes
 		while (!Serialfile.eof())
 		Serialfile >> collector.SerialIndex;
 
@@ -140,7 +154,7 @@ int main()
 		// Hub::run() to send events to all registered device listeners
 		hub.addListener(&collector);
 
-		// Set console font parameters
+		// Set console font parameters (Make easier to follow instructions)
 		CONSOLE_FONT_INFOEX cfi;
 		cfi.cbSize = sizeof cfi;
 		cfi.nFont = 0;
@@ -153,38 +167,42 @@ int main()
 
 		std::cout << "Please follow the instructions to provide gestural data!" << std::endl;
 		std::cout << "Allow a couple seconds while Terminator Myo warms up to arm... " << std::endl << std::endl;
-		Sleep(3000);             // suspend execution of current/active thread for time-argument
+		Sleep(5000);             // suspend execution of current/active thread for time-argument
 
 		// Finally we enter our main loop.
 		for (int i = 0; i < sizeof(gestures)/sizeof(*gestures); i++){
 			system("cls");
 
-			std::cout << std::endl; std::cout << "\t\t Perform:  " << gestures[i] << " for (3) secs" << std::endl;
+			std::cout << std::endl; std::cout << "\n\n\n \t\t Perform:  " << gestures[i] << " for (5) secs" << std::endl;
 
 			// Get current CPU time
 			double startTime = GetTickCount();      
 			double currentTime = 0;
+
+			while ((GetTickCount() - startTime) <= 1000) {}; // wait for 1 extra sec for user change
 
 			// Get data for 3 seconds
 			while (currentTime <= 3000)
 			{
 				// In each iteration of our main loop, we run the Myo event loop for a set number of milliseconds
 				// In this case, we wish to update our display 50 times a second. (Myo provides EMG at 200Hz and IMU data at 50Hz and is unaffected by display rates)
-				hub.run(1000/20);
+				hub.run(1);
 
 				// After processing events, we call the writeData() function to write new data to our outfile
 				collector.writeData(gestures[i]);
-
-				// Update CPU time for iteration purposes
+				
+				// Update time for iteration purposes
 				currentTime = GetTickCount() - startTime;
 			}
+
+			while ((GetTickCount() - startTime) <= 5000) {}; // wait for 1 extra sec for user change
 						
 		}
 
 		// Tidy up & End program
 		std::cout << "Saving Data... " << std::endl;
 		system("cls");
-		std::cout << "\n     *****  Thank you for helping out HU Team Terminator!  *****\n\n";
+		std::cout << "\n       *****  Thank you for helping out HU Team Terminator!  *****\n\n";
 		std::cout << "                           From Ayo & Mark!           \n\n";
 		Sleep(3000);
 		return 0;
