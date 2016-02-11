@@ -101,7 +101,7 @@ public:
 };
 
 
-int submain()
+int main()
 {
 	// Declare & open infile 
 	std::ifstream Serialfile;    
