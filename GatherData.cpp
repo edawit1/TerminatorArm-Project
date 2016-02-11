@@ -1,5 +1,5 @@
 // Modified Version of emg-sample-data.cpp (Copyright (C) 2013-2014 Thalmic Labs Inc. Distributed under the Myo SDK license agreement, LICENSE.txt)
-// By: Ayotunde Odejayi 
+// By:
 // Howard University Terminator Arm Senior Design 2015.
 // 
 
