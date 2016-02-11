@@ -1,5 +1,5 @@
 // Modified Version of emg-sample-data.cpp (Copyright (C) 2013-2014 Thalmic Labs Inc. Distributed under the Myo SDK license agreement, LICENSE.txt)
-// By:
+// By: 
 // Howard University Terminator Arm Senior Design 2015.
 // 
 
@@ -62,7 +62,7 @@ public:
 	// There are other virtual functions in DeviceListener that we could override here, like onAccelerometerData()
 	// For this application, the functions overridden above are sufficient
 	std::string SerialIndex, update = "gesture";
-	std::ofstream TerminatorFile, RawEmgFile, ClassifierFile;
+	std::ofstream TerminatorFile;
 	std::string filepath = "C:\\Users\\Ayotunde\\Google Drive\\Team Terminator\\Data Analysis\\EMGClassifierData\\TeamTerminatorData";  
 	int NewLineflag = 0;
 
@@ -101,7 +101,7 @@ public:
 };
 
 
-int main()
+int submain()
 {
 	// Declare & open infile 
 	std::ifstream Serialfile;    
