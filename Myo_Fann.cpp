@@ -21,20 +21,14 @@ namespace Myo_Fann
 
 		// Trains w/ entire dataset or individual data
 		if (TerminatorMyo_Fann::toCalibrate){
-			std::cout << "Calibrating logged user data... \n\n";
 			fann_train_on_file(ann, "C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\MyoCal.data", max_epochs, epochs_between_reports, desired_error);
 			fann_save(ann, "MyoCal.net");
-			std::cout << "User Calibration complete! \n\n";
-
 		}
 		else{
-			std::cout << "Calibrating with stored general data... \n\n"; 
 			fann_train_on_file(ann, "C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\Myo.data", max_epochs, epochs_between_reports, desired_error);
 			fann_save(ann, "Myo.net");
-			std::cout << "Calibration complete! \n\n";
 		}
 		
-
 		fann_destroy(ann);
 	}
 
