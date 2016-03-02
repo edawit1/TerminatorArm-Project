@@ -40,7 +40,7 @@ public:
 
 	void onArmSync(myo::Myo* myo, uint64_t timestamp, myo::Arm arm, myo::XDirection xDirection, float rotation, myo::WarmupState warmupState)
 	{
-	system("cls"); std::cout << "ARM SYNC!!" << std::endl;
+	system("cls"); //std::cout << "ARM SYNC!!" << std::endl;
 	onArm = true;
 	whichArm = arm;
 	}
@@ -52,7 +52,7 @@ public:
 		system("cls"); std::cout << "ARM UN-SYNC!!" << std::endl;
 		onArm = false;
 		Sleep(5000);
-	}
+	};
 
 	// onUnpair() is called whenever the Myo is disconnected from Myo Connect by the user
 	void onUnpair(myo::Myo* myo, uint64_t timestamp)
@@ -74,11 +74,61 @@ public:
 	// The values of this array is set by onEmgData() above
 	std::array<int8_t, 8> emgSamples;
 	int DataArray[80];
-	int no_testDatalines = 10;
+	int no_testDatalines = 10; int no_lines = 0;
 
 	// There are other virtual functions in DeviceListener that we could override here, like onAccelerometerData()
 	// For this application, the functions overridden above are sufficient
-	
+	std::string update = "*REST/RELAX* position";
+	std::fstream Cal_DataFile;
+	std::string filepath = "C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\MyoCal.data";
+	bool NewLineflag = 0; float gesture_label, lastdataval;
+	bool title_flag = 0;
+
+	// We define this function to write the data values from Cal. in calibration format required by the Myo_Fann lib.
+	// ** NB ** : This function could use a lot of optimization but it works as is.
+	void writeCalData(std::string gesture)      
+	{
+		if (no_lines != no_testDatalines || update != gesture){       // Check to ensure we're only writing how many data lines we need from the hub
+			// Create and open outfile 
+			Cal_DataFile.open(filepath, std::fstream::app);
+			if (!title_flag) Cal_DataFile << "12 80 1\n";
+
+			// write out the EMG classifier data
+			for (size_t i = 0; i < emgSamples.size(); i++) {
+				std::ostringstream oss;
+				oss << static_cast<int>(emgSamples[i]);        // convert 8-bit array into int
+				std::string emgString = oss.str();
+
+				if (NewLineflag == 1){
+					Cal_DataFile << "\n";
+					NewLineflag = 0;
+				}
+
+				// Write current gesture value to outfile
+				if (update != gesture){
+					no_lines = 0;   // Reset no. of lines 
+					if (update == "*REST/RELAX* position")	   gesture_label = 0;
+					else if (update == "*(THUMB)* contraction")   gesture_label = 0.2;
+					else if (update == "*(INDEX fing.)* contraction") gesture_label = 0.4;
+					else if (update == "*(MIDDLE fing.)* contraction") gesture_label = 0.6;
+					else if (update == "*(RING fing.)* contraction")   gesture_label = 0.8;
+					else if (update == "*(PINKY fing.)* contraction")  gesture_label = 0.9;
+					else if (update == "*(HAND)* contraction") gesture_label = 1.0;
+					Cal_DataFile << gesture_label << "\n"; update = gesture;
+					if (gesture == "*(HAND)* contraction") lastdataval = 1.0;
+				}
+
+				// Write to outfile
+				Cal_DataFile << emgString << " ";
+			}
+			NewLineflag = 1; no_lines++; title_flag = 1;
+			if (lastdataval == 1.0 && no_lines == no_testDatalines) Cal_DataFile << "\n" << lastdataval;
+			std::cout << std::flush;
+			Cal_DataFile.close();       // flush buffer to outfile
+
+		}
+	}
+
 	// We define this function to write the current values that were updated by the on...() functions above
 	void writeData()
 	{
@@ -151,7 +201,7 @@ int main(int argc, char** argv)
 
 	// We catch any exceptions that might occur below -- see the catch statement for more details
 	try {
-
+		system("mode 650");   // Full screen mode
 		// First, we create a Hub without any application identifier (I deemed it unnecessary), the Hub provides access to one or more Myos
 		myo::Hub hub("");
 
@@ -194,10 +244,51 @@ int main(int argc, char** argv)
 		wcscpy_s(cfi.FaceName, L"Consolas");
 		SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
 
-		std::cout << "\n\n\n\n\n\t\t   Welcome to Terminator Arm Gen. 1.0 !" << std::endl;
+		std::cout << "\n\n\n\n\n\n\t\t    Welcome to Terminator Arm Gen. (1.0) !" << std::endl;
 		std::cout << "\t  Allow a couple seconds while Terminator Myo warms up to arm... " << std::endl << std::endl;
 		Sleep(5000);             // suspend execution of current/active thread for time-argument
 
+		// If Calibration mode, Train Network
+		if (TerminatorGR.toCalibrate){ 
+			system("cls");
+			std::cout << "\n\n\n\n\n\n\t   Please follow the instructions to perform CALIBRATION!" << std::endl;
+			Sleep(5000);             // suspend execution of current/active thread for time-argument
+			
+			// Perform Calibration
+			for (int i = 0; i < sizeof(gestures) / sizeof(*gestures); i++){
+				system("cls");
+				std::cout << std::endl; std::cout << "\n\n\n \t\t Perform:  " << gestures[i] << " for (5) secs" << std::endl;
+
+				// Get current CPU time
+				double startTime = GetTickCount();
+				double currentTime = 0;
+
+				while ((GetTickCount() - startTime) <= 1000) {}; // wait for 1 extra sec for user change
+				// Record data for 3 seconds
+				while (currentTime <= 3000)
+				{
+					// In each iteration of our main loop, we run the Myo event loop for a set number of milliseconds
+					// In this case, we wish to update our display 50 times a second. (Myo provides EMG at 200Hz and IMU data at 50Hz and is unaffected by display rates)
+					hub.run(1000/20); //hub.runOnce();
+					
+					// After processing events, we call the writeData() function to write new data to our outfile
+					collector.writeCalData(gestures[i]);
+					
+					// Update time for iteration purposes
+					currentTime = GetTickCount() - startTime;
+				}
+				while ((GetTickCount() - startTime) <= 5000) {}; // wait for 1 extra sec for user change
+			}
+
+			// Train net with logged data
+			system("cls"); std::cout << "Data logging complete!\n"; std::cout << "Now calibrating logged user data...\n"; Sleep(1000);
+			TerminatorGR.Myo_Train();
+			system("cls"); std::cout << "User Calibration complete! \n\n"; Sleep(1000);
+			
+			// Ready for real-time data
+		}
+			
+		
 		// Finally we enter our main loop.
 		Listen:
 		while (collector.onArm){
@@ -226,9 +317,7 @@ int main(int argc, char** argv)
 
 	//	}
 	}
-		// Train Net
-		// if (TerminatorGR.toCalibrate){
-		//TerminatorGR.Myo_Train();}
+		
 		while (collector.onArm == false){
 			system("cls");  std::cout << "\n\n\n \t\tPlease re-sync Terminator Myo for best results!";
 		}
