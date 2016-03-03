@@ -27,9 +27,12 @@
 #include <fstream>
 #include "windows.h"   // contains Sleep library
 #include <time.h>
+#include <process.h>
+#include <cstdio>
+
 
 #include <myo/myo.hpp>            // Myo default header library
-#include "Myo_Fann.h"
+#include "Myo_Fann.h"             // "Myo-adapted" Fann library
 
 
 // DataCollector class inheriting member functions from myo::DeviceListener
@@ -80,7 +83,7 @@ public:
 	// For this application, the functions overridden above are sufficient
 	std::string update = "*REST/RELAX* position";
 	std::fstream Cal_DataFile;
-	std::string filepath = "C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\MyoCal.data";
+	std::string Cal_filepath = "C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\MyoCal.data";
 	bool NewLineflag = 0; float gesture_label, lastdataval;
 	bool title_flag = 0;
 
@@ -90,7 +93,7 @@ public:
 	{
 		if (no_lines != no_testDatalines || update != gesture){       // Check to ensure we're only writing how many data lines we need from the hub
 			// Create and open outfile 
-			Cal_DataFile.open(filepath, std::fstream::app);
+			Cal_DataFile.open(Cal_filepath, std::fstream::app);
 			if (!title_flag) Cal_DataFile << "12 80 1\n";
 
 			// write out the EMG classifier data
@@ -125,12 +128,11 @@ public:
 			if (lastdataval == 1.0 && no_lines == no_testDatalines) Cal_DataFile << "\n" << lastdataval;
 			std::cout << std::flush;
 			Cal_DataFile.close();       // flush buffer to outfile
-
 		}
 	}
 
 	// We define this function to write the current values that were updated by the on...() functions above
-	void writeData()
+	void writeRunData()
 	{
 		int j = 0;    // Reset Array starting write-index
 
@@ -145,6 +147,11 @@ public:
 		}
 	}
 
+	void DeleteCalFile()
+	{
+		//system("del C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\MyoCal.data");
+		std::remove("C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\MyoCal.data"); 
+	}
 	// These values are set by onArmSync() and onArmUnsync() above.
 	bool onArm;
 	myo::Arm whichArm;
@@ -248,7 +255,7 @@ int main(int argc, char** argv)
 		std::cout << "\t  Allow a couple seconds while Terminator Myo warms up to arm... " << std::endl << std::endl;
 		Sleep(5000);             // suspend execution of current/active thread for time-argument
 
-		// If Calibration mode, Train Network
+		// If Calibration mode is enabled, Train Cal. Network
 		if (TerminatorGR.toCalibrate){ 
 			system("cls");
 			std::cout << "\n\n\n\n\n\n\t   Please follow the instructions to perform CALIBRATION!" << std::endl;
@@ -281,15 +288,16 @@ int main(int argc, char** argv)
 			}
 
 			// Train net with logged data
-			system("cls"); std::cout << "Data logging complete!\n"; std::cout << "Now calibrating logged user data...\n"; Sleep(1000);
+			system("cls"); std::cout << "\t\t\t   Data logging complete!\n"; std::cout << "\t\tNow calibrating logged user data...\n\n\n\n\n\n\n"; Sleep(1000);
 			TerminatorGR.Myo_Train();
-			system("cls"); std::cout << "User Calibration complete! \n\n"; Sleep(1000);
-			
-			// Ready for real-time data
+			system("cls"); std::cout << "\n\n\n\n\n\n\t\t  User Calibration complete! \n\n"; Sleep(1000);
+			collector.DeleteCalFile();  // Net. is trained, deletes Cal_Datafile for next user
+
+			// Exit calibration, Ready for real-time data
 		}
 			
 		
-		// Finally we enter our main loop.
+		// Finally we enter our Real-time loop.
 		Listen:
 		while (collector.onArm){
 		
@@ -307,12 +315,13 @@ int main(int argc, char** argv)
 				hub.run(1000 / 20);
 
 				// After processing events, we call the writeData() function to write new data to our outfile
-				collector.writeData();
+				collector.writeRunData();
 
 				TerminatorGR.TranslateGesture(collector.DataArray);
 
 				// Update time for iteration purposes
 				currentTime = GetTickCount() - startTime;
+				if (collector.onArm) std::cout << "Still on Arm!! \n";
 			}
 
 	//	}
