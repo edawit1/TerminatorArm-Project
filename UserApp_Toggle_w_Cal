@@ -28,7 +28,6 @@
 #include "windows.h"   // contains Sleep library
 #include <time.h>
 #include <process.h>
-#include <cstdio>
 
 
 #include <myo/myo.hpp>            // Myo default header library
