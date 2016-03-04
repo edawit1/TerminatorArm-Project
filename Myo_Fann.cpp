@@ -6,13 +6,13 @@ namespace Myo_Fann
 	void TerminatorMyo_Fann::Myo_Train()
 	{// Trains the Neural Network "Myo.net"
 		// Parameters
-		const unsigned int num_input = 80;
+		const unsigned int num_input = datasize;
 		const unsigned int num_output = 1;
 		const unsigned int num_layers = 3;
 		const unsigned int num_neurons_hidden = 20;
 		const float desired_error = (const float)-1;  //Default- 0.001
 		const unsigned int max_epochs = 200000;
-		const unsigned int epochs_between_reports = 500;
+		const unsigned int epochs_between_reports = 200;
 
 		struct fann *ann = fann_create_standard(num_layers, num_input, num_neurons_hidden, num_output);
 
@@ -32,7 +32,7 @@ namespace Myo_Fann
 		fann_destroy(ann);
 	}
 
-	fann_type TerminatorMyo_Fann::Myo_Test(fann_type input[80])
+	fann_type TerminatorMyo_Fann::Myo_Test(fann_type input[datasize])
 	{
 		// Uses/Tests the Neural Network 
 		fann_type *calc_out;
