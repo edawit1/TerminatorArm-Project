@@ -17,10 +17,10 @@ namespace Myo_Fann
 	{
 	public:
 		const static bool toCalibrate = 1;  // Set user mode i.e calibration w/user data or run on Stored data
+		const static int datasize = 240;    // datasize for training and testing
+
 		// Member functions
 		static void Myo_Train();  // Trains ann w/ either Calibration or general user collected data
-		static fann_type Myo_Test(fann_type input[80]);   // Uses trained "Myo.net" file 
-
-		const static int datasize = 240;     // datasize for training and testing
+		static fann_type Myo_Test(fann_type input[datasize]);   // Uses trained "Myo.net" file 
 	};
 }
