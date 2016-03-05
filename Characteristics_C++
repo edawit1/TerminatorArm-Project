@@ -5,13 +5,13 @@
 
 int main()
 {
-	// Assume this to be a function receiving an array data[240]   i.e an 80-emg x 30-Datalines  array every sec. or so at run-time
+	// Assume this to be a function receiving an array data[240]   i.e an 8-emg x 30-Datalines  array every sec. or so at run-time
 	std::ifstream infile;
-	infile.open("inputdata.txt");
+	infile.open("inputdata.txt");  // To run, this code would need an inputdata.txt file of 8-emg x 30-Datalines (240 digits)  
 
 	// Variables
 	const int dataSize = 240;
-	const int no_gestures = 12, no_pods = 8; std::string gesture = "Rest";
+	const int no_gestures = 12, no_pods = 8; std::string gesture = "Rest";  // here, no_gestures = 12 because I included in-between rests to quickly setup code, this can be changed 
 
 	float Rest=0.0, Thumb=0.0, Index=0.0, Middle=0.0, Ring=0.0, Pinky=0.0, wrist=0.0;
 	float Pod0=0, Pod1=0, Pod2=0, Pod3=0, Pod4=0, Pod5=0, Pod6=0, Pod7=0;
@@ -23,7 +23,7 @@ int main()
 	for (int i = 0; i < dataSize; i++)
 		//inputData[i] = Data[];  // Reads data from Array in actual code as function
 	{
-		infile >> inputData[i];
+		infile >> inputData[i];            // Reads data from .txt file
 		if (inputData[i] < 0) inputData[i] = sqrt(inputData[i] * inputData[i]);     // compute absolute values 
 	}
 		
