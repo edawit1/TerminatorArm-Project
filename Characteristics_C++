@@ -21,7 +21,7 @@ int main()
 	// 1. Parse input datastream
 	int inputData[dataSize]; 
 	for (int i = 0; i < dataSize; i++)
-		//inputData[i] = data[];  // Reads data from Array in actual code as function
+		//inputData[i] = Data[];  // Reads data from Array in actual code as function
 	{
 		infile >> inputData[i];
 		if (inputData[i] < 0); inputData[i] = sqrt(inputData[i] * inputData[i]);     // compute absolute values 
