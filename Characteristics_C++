@@ -1,1 +1,112 @@
-// I;ll place c++ code here
+#include <iostream>
+#include <fstream>
+#include <string>
+
+int main()
+{
+	// Assume this to be a function receiving an array data[240]   i.e an 80-emg x 30-Datalines  array every sec. or so at run-time
+	std::ifstream infile;
+	infile.open("inputdata.txt");
+
+	// Variables
+	const int dataSize = 240;
+	const int no_gestures = 12, no_pods = 8; std::string gesture = "Rest";
+
+	float Rest=0.0, Thumb=0.0, Index=0.0, Middle=0.0, Ring=0.0, Pinky=0.0, wrist=0.0;
+	int Pod0=0, Pod1=0, Pod2=0, Pod3=0, Pod4=0, Pod5=0, Pod6=0, Pod7=0;
+	int checkvalues[] = { 4, 5, 6, 7, 8 };
+	float Percents[5][no_pods]; float finalvalue[7];
+
+	// 1. Parse input datastream
+	int inputData[dataSize]; // Re, Th, Re, In, Re, Mid, Re, Ri, Re, P, Re, H
+	for (int i = 0; i < dataSize; i++)
+		//inputData[i] = data[];
+		infile >> inputData[i];
+
+	// GR Approach
+	// 2. Compute percentages for values between 4 through 8
+	for (int i = 0; i < sizeof(checkvalues) / sizeof(checkvalues[0]); i++){
+		for (int j = 0; j < dataSize; j++){            // Score no_times data is less than 8
+			if (inputData[j] < checkvalues[j])
+				if (j == 0 || i % 8 == 0)  Pod0++;                 // Pod 0
+				else if (j == 1 || (j-1) % 8 == 0)  Pod1++;        // Pod 1
+				else if (j == 2 || (j-2) % 8 == 0)  Pod2++;        // Pod 2
+				else if (j == 3 || (j-3) % 8 == 0)  Pod3++;        // Pod 3
+				else if (j == 4 || (j-4) % 8 == 0)  Pod4++;        // Pod 4
+				else if (j == 5 || (j-5) % 8 == 0)  Pod5++;        // Pod 5
+				else if (j == 6 || (j-6) % 8 == 0)  Pod6++;        // Pod 6
+				else Pod7++;                                       // Pod 7
+		}
+
+	   // Compute percent based off no_times
+		Percents[i][0] = (Pod0 / dataSize) * 100; Percents[i][1] = (Pod1 / dataSize) * 100; Percents[i][2] = (Pod2 / dataSize) * 100;
+		Percents[i][3] = (Pod3 / dataSize) * 100; Percents[i][4] = (Pod4 / dataSize) * 100; Percents[i][5] = (Pod5 / dataSize) * 100;
+		Percents[i][6] = (Pod6 / dataSize) * 100; Percents[i][7] = (Pod7 / dataSize) * 100;
+}
+
+	// 3. Weight/Decision Branches
+	bool Flag = 0;
+		// Branch 1
+		for (int i = 0; i < 6; i++){
+			if (Percents[5][i + 1] < 90.0) Flag = 1;
+		} if (!Flag) Rest = 2.0;
+
+		// Branch 2
+		if (Percents[5][2] >= 90.0 && Percents[5][3] >= 90.0){
+
+			if (Percents[5][5]) Thumb += 1.0;
+			
+			else{
+				if (Percents[5][0] > 45.0 && Percents[5][6] > 45.0)
+				{
+					if (Percents[5][5] < 65.0) Ring += 1.0;
+					else
+					{
+						if (Percents[5][4] > 84.0) 
+						{
+							if (Percents[5][1] < 84) Index += 1;
+							else Middle += 1;
+						}
+						else
+						{
+							Middle += 0.75, Index += 0.25;
+							if (Percents[5][1] > 84.0)
+								Middle += 1.0;
+						}
+					}
+				}
+				else{
+
+				}
+			}
+		}
+		else{
+			wrist += 2.0;
+		}
+
+
+	// 4. Select based on final Weight values
+		float temp = 0.0; int largestindex = 0;
+		finalvalue[0]=Rest; finalvalue[1]=Rest; finalvalue[2]=Thumb; finalvalue[3]=Index; finalvalue[4]= Middle; finalvalue[5]=Ring; finalvalue[6]=Pinky; finalvalue[6]=wrist;
+		for (int i = 0; i < 7; i++)
+		{
+			if (temp < finalvalue[i]){
+				temp = finalvalue[i]; largestindex = i;
+			}
+		}
+
+		//gesture = finalvalue[largestindex];
+		if (largestindex == 1) gesture = "Rest";
+		if (largestindex == 1) gesture = "Thumb";
+		if (largestindex == 1) gesture = "Index";
+		if (largestindex == 1) gesture = "Middle";
+		if (largestindex == 1) gesture = "Ring";
+		if (largestindex == 1) gesture = "Pinky";
+		if (largestindex == 1) gesture = "Wrist";
+
+		std::cout << "Gesture is: " << gesture << "\n";
+
+	// End program
+	std::cin.get();
+	return 0;
+}
