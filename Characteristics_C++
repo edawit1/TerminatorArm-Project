@@ -63,7 +63,7 @@ int main()
 		// Branch 2
 		if (Percents[4][2] >= 90.0 && Percents[4][3] >= 90.0){
 
-			if (Percents[4][5]) Thumb += 1.0;
+			if (Percents[4][5]> 85.0) Thumb += 1.0;
 			
 			else{
 				if (Percents[4][0] > 45.0 && Percents[4][6] > 45.0)
