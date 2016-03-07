@@ -57,29 +57,29 @@ int main()
 	bool Flag = 0;
 		// Branch 1
 		for (int i = 0; i < 6; i++){
-			if (Percents[5][i + 1] < 90.0) Flag = 1;
+			if (Percents[4][i + 1] < 90.0) Flag = 1;
 		} if (!Flag) Rest = 2.0;
 
 		// Branch 2
-		if (Percents[5][2] >= 90.0 && Percents[5][3] >= 90.0){
+		if (Percents[4][2] >= 90.0 && Percents[4][3] >= 90.0){
 
-			if (Percents[5][5]) Thumb += 1.0;
+			if (Percents[4][5]) Thumb += 1.0;
 			
 			else{
-				if (Percents[5][0] > 45.0 && Percents[5][6] > 45.0)
+				if (Percents[4][0] > 45.0 && Percents[4][6] > 45.0)
 				{
-					if (Percents[5][5] < 65.0) Ring += 1.0;
+					if (Percents[4][5] < 65.0) Ring += 1.0;
 					else
 					{
-						if (Percents[5][4] > 84.0) 
+						if (Percents[4][4] > 84.0) 
 						{
-							if (Percents[5][1] < 84) Index += 1;
+							if (Percents[4][1] < 84) Index += 1;
 							else Middle += 1;
 						}
 						else
 						{
 							Middle += 0.75, Index += 0.25;
-							if (Percents[5][1] > 84.0)
+							if (Percents[4][1] > 84.0)
 								Middle += 1.0;
 						}
 					}
