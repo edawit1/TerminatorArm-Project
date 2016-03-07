@@ -5,48 +5,52 @@
 
 int main()
 {
-	// Assume this to be a function receiving an array data[240]   i.e an 8-emg x 30-Datalines  array every sec. or so at run-time
+	// Assume this to be a function receiving an array data[240]   i.e an 80-emg x 30-Datalines  array every sec. or so at run-time
 	std::ifstream infile;
-	infile.open("inputdata.txt");  // To run, this code would need an inputdata.txt file of 8-emg x 30-Datalines (240 digits)  
+	infile.open("inputdata.txt");
 
 	// Variables
 	const int dataSize = 240;
-	const int no_gestures = 12, no_pods = 8; std::string gesture = "Rest";  // here, no_gestures = 12 because I included in-between rests to quickly setup code, this can be changed 
+	const int no_gestures = 12, no_pods = 8; std::string gesture = "Rest";
 
 	float Rest=0.0, Thumb=0.0, Index=0.0, Middle=0.0, Ring=0.0, Pinky=0.0, wrist=0.0;
-	float Pod0=0, Pod1=0, Pod2=0, Pod3=0, Pod4=0, Pod5=0, Pod6=0, Pod7=0;
+	int Pod0=0, Pod1=0, Pod2=0, Pod3=0, Pod4=0, Pod5=0, Pod6=0, Pod7=0;
 	int checkvalues[] = { 4, 5, 6, 7, 8 };
 	float Percents[5][no_pods]; float finalvalue[7];
 
 	// 1. Parse input datastream
 	int inputData[dataSize]; 
 	for (int i = 0; i < dataSize; i++)
-		//inputData[i] = Data[];  // Reads data from Array in actual code as function
+		//inputData[i] = data[];
 	{
-		infile >> inputData[i];            // Reads data from .txt file
+		infile >> inputData[i];
 		if (inputData[i] < 0) inputData[i] = sqrt(inputData[i] * inputData[i]);     // compute absolute values 
 	}
 		
 
-	// 2. GR Approach
-	// Compute percentages for values between 4 through 8
+	// GR Approach
+	// 2. Compute percentages for values between 4 through 8
 	for (int i = 0; i < sizeof(checkvalues) / sizeof(checkvalues[0]); i++){
 		for (int j = 0; j < dataSize; j++){            // Score no_times data is less than 8
-			if (inputData[j] < checkvalues[i])
+			if (inputData[j] < checkvalues[i]){
 				if (j == 0 || j % 8 == 0)  Pod0++;                 // Pod 0
-				else if (j == 1 || (j-1) % 8 == 0)  Pod1++;        // Pod 1
-				else if (j == 2 || (j-2) % 8 == 0)  Pod2++;        // Pod 2
-				else if (j == 3 || (j-3) % 8 == 0)  Pod3++;        // Pod 3
-				else if (j == 4 || (j-4) % 8 == 0)  Pod4++;        // Pod 4
-				else if (j == 5 || (j-5) % 8 == 0)  Pod5++;        // Pod 5
-				else if (j == 6 || (j-6) % 8 == 0)  Pod6++;        // Pod 6
+				else if (j == 1 || (j - 1) % 8 == 0)  Pod1++;        // Pod 1
+				else if (j == 2 || (j - 2) % 8 == 0)  Pod2++;        // Pod 2
+				else if (j == 3 || (j - 3) % 8 == 0)  Pod3++;        // Pod 3
+				else if (j == 4 || (j - 4) % 8 == 0)  Pod4++;        // Pod 4
+				else if (j == 5 || (j - 5) % 8 == 0)  Pod5++;        // Pod 5
+				else if (j == 6 || (j - 6) % 8 == 0)  Pod6++;        // Pod 6
 				else Pod7++;                                       // Pod 7
+			}
 		}
 
 	   // Compute percent based off no_times
-		Percents[i][0] = (Pod0 / dataSize) * 100.0; Percents[i][1] = (Pod1 / dataSize) * 100.0; Percents[i][2] = (Pod2 / dataSize) * 100.0;
-		Percents[i][3] = (Pod3 / dataSize) * 100.0; Percents[i][4] = (Pod4 / dataSize) * 100.0; Percents[i][5] = (Pod5 / dataSize) * 100.0;
-		Percents[i][6] = (Pod6 / dataSize) * 100.0; Percents[i][7] = (Pod7 / dataSize) * 100.0;
+		Percents[i][0] = (Pod0*no_pods * 100) / dataSize; Percents[i][1] = (Pod1*no_pods*100) / dataSize; Percents[i][2] = (Pod2*no_pods*100) / dataSize;
+		Percents[i][3] = (Pod3*no_pods*100) / dataSize; Percents[i][4] = (Pod4*no_pods*100) / dataSize; Percents[i][5] = (Pod5*no_pods*100) / dataSize;
+		Percents[i][6] = (Pod6*no_pods* 100.0) / dataSize; Percents[i][7] = (Pod7*no_pods*100) / dataSize;
+
+		// Reset Pod values
+		Pod0 = 0, Pod1 = 0, Pod2 = 0, Pod3 = 0, Pod4 = 0, Pod5 = 0, Pod6 = 0, Pod7 = 0;
 }
 
 	// 3. Weight/Decision Branches
@@ -59,10 +63,10 @@ int main()
 		// Branch 2
 		if (Percents[5][2] >= 90.0 && Percents[5][3] >= 90.0){
 
-			if (Percents[5][5] > 85.0) Thumb += 1.0;
+			if (Percents[5][5]) Thumb += 1.0;
 			
 			else{
-				if (Percents[5][0] > 45.0 && Percents[5][6] > 80.0)
+				if (Percents[5][0] > 45.0 && Percents[5][6] > 45.0)
 				{
 					if (Percents[5][5] < 65.0) Ring += 1.0;
 					else
