@@ -6,6 +6,8 @@
 int main()
 {
 	// Assume this to be a function receiving an array data[240]   i.e an 80-emg x 30-Datalines  array every sec. or so at run-time
+	// To do: Update logic branches. if/else branch of Thumb needs to be completed too!
+	
 	std::ifstream infile;
 	infile.open("inputdata.txt");
 
@@ -85,7 +87,7 @@ int main()
 					}
 				}
 				else{
-
+					Pinky += 0.8; Ring += 0.4; Middle += 0.1; Index += 0.1;
 				}
 			}
 		}
