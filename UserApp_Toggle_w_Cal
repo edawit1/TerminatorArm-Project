@@ -28,6 +28,7 @@
 #include "windows.h"   // contains Sleep library
 #include <time.h>
 #include <process.h>
+#include <math.h>
 
 #include <myo/myo.hpp>            // Myo default header library
 #include "Myo_Fann.h"             // "Myo-adapted" Fann library
@@ -39,6 +40,11 @@ public:
 	// Device listener functions
 	DataCollector() : onArm(true), emgSamples()
 	{}
+
+	void attachByMacAddress(string macAddress)
+	{
+
+	}
 
 	void onArmSync(myo::Myo* myo, uint64_t timestamp, myo::Arm arm, myo::XDirection xDirection, float rotation, myo::WarmupState warmupState)
 	{
@@ -81,9 +87,10 @@ public:
 	int no_testDatalines = 30, DataArray[240], no_lines = 0;    // ** SET the desired no. of training & test data lines here. multiply by 8 for dataArray **
 	
 	std::string update = "*REST/RELAX* position";
-	std::fstream Cal_DataFile;
+	std::fstream DataFile;
 	std::string Cal_filepath = "C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\MyoCal.data";
-	float gesture_label, lastdataval;
+	std::string Run_filepath = "C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\RuntimeData.txt";
+	double gesture_label, lastdataval;
 	bool NewLineflag = 0, title_flag = 0;
 
 	// We define this function to write the data values from Cal. in calibration format required by the Myo_Fann lib.
@@ -92,8 +99,8 @@ public:
 	{
 		if (no_lines != no_testDatalines || update != gesture){       // Check to ensure we're only writing how many data lines we need from the hub
 			// Create and open outfile 
-			Cal_DataFile.open(Cal_filepath, std::fstream::app);
-			if (!title_flag) Cal_DataFile << "12 240 1\n";
+			DataFile.open(Cal_filepath, std::fstream::app);
+			if (!title_flag) DataFile << "12 80 1\n";
 
 			// write out the EMG classifier data
 			for (size_t i = 0; i < emgSamples.size(); i++) {
@@ -102,7 +109,7 @@ public:
 				std::string emgString = oss.str();
 
 				if (NewLineflag == 1){
-					Cal_DataFile << "\n";
+					DataFile << "\n";
 					NewLineflag = 0;
 				}
 
@@ -116,40 +123,67 @@ public:
 					else if (update == "*(RING fing.)* contraction")   gesture_label = 0.8;
 					else if (update == "*(PINKY fing.)* contraction")  gesture_label = 0.9;
 					else if (update == "*(HAND)* contraction") gesture_label = 1.0;
-					Cal_DataFile << gesture_label << "\n"; update = gesture;
+					DataFile << gesture_label << "\n"; update = gesture;
 					if (gesture == "*(HAND)* contraction") lastdataval = 1.0;
 				}
 
 				// Write to outfile
-				Cal_DataFile << emgString << " ";
+				DataFile << emgString << " ";
 			}
 			NewLineflag = 1; no_lines++; title_flag = 1;
-			if (lastdataval == 1.0 && no_lines == no_testDatalines) Cal_DataFile << "\n" << lastdataval;
+			if (lastdataval == 1.0 && no_lines == no_testDatalines) DataFile << "\n" << lastdataval;
 			std::cout << std::flush;
-			Cal_DataFile.close();       // flush buffer to outfile
+			DataFile.close();       // flush buffer to outfile
 		}
 	}
 
 	// We define this function to write the current values that were updated by the on...() functions above
 	void writeRunData()
 	{
-		int j = 0;    // Reset Array starting write-index
-			
-		while (j < no_testDatalines*emgSamples.size()){
+		NewLineflag = 0; no_lines = 0;
+		while (no_lines != no_testDatalines){       // Check to ensure we're only writing how many data lines we need from the hub
+			// Create and open outfile 
+			DataFile.open(Run_filepath, std::fstream::app);
+
 			// write out the EMG classifier data
 			for (size_t i = 0; i < emgSamples.size(); i++) {
 				std::ostringstream oss;
 				oss << static_cast<int>(emgSamples[i]);        // convert 8-bit array into int
 				std::string emgString = oss.str();
-				DataArray[j] = static_cast<int>(emgSamples[i]); j++;
+
+				if (NewLineflag == 1){
+					DataFile << "\n";
+					NewLineflag = 0;
+				}
+
+				// Write to outfile
+				DataFile << emgString << " ";
 			}
+			NewLineflag = 1; no_lines++;
+			std::cout << std::flush;
+			DataFile.close();       // flush buffer to outfile
 		}
+
+            /* Use array mode to write data, here!
+		   int j = 0;    // Reset Array starting write-index
+
+			while (j < no_testDatalines*emgSamples.size()){
+			// write out the EMG classifier data
+			for (size_t i = 0; i < emgSamples.size(); i++) {
+			std::ostringstream oss;
+			oss << static_cast<int>(emgSamples[i]);        // convert 8-bit array into int
+			std::string emgString = oss.str();
+			DataArray[j] = static_cast<int>(emgSamples[i]); j++;
+			}
+			}*/
+		
 	}
 
 	void DeleteCalFile()
 	{
 		std::remove("C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\MyoCal.data"); 
 	}
+
 	// These values are set by onArmSync() and onArmUnsync() above.
 	bool onArm;
 	myo::Arm whichArm;
@@ -157,60 +191,182 @@ public:
 
 class GestureRec : public Myo_Fann::TerminatorMyo_Fann{
 public:
-	DataCollector Data;
-	// Open and read datafile 
-	std::ifstream datafile;
-	fann_type input[datasize];
+	std::ifstream RunData;
+	fann_type input_Net[datasize];
 	std::string prev_gesture, gesture;
+	int input_Char[datasize];
 
-	void TranslateGesture(int Data[datasize])
+	//std::ifstream infile;
+	void ParseData(std::string GR_method)
 	{
-		// Grab test data from infile
-		for (int i = 0; i < datasize; i++)
-			input[i] = Data[i];
+		RunData.open("C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\RuntimeData.txt");
 
+		// Grab test data 
+		if (GR_method == "Neural Net"){
+			for (int i = 0; i < datasize; i++)
+				RunData >> input_Net[i];
+		}
+		else{
+			for (int i = 0; i < datasize; i++){
+				RunData >> input_Char[i];           //Here, using .txt files           // input_Net[i] = Data[i]; //(Using Arrays)
+				if (input_Char[i] < 0) input_Char[i] = sqrt(input_Char[i] * input_Char[i]);     // compute absolute values 
+			}
+		}
+
+		// Delete RuntimeData.txt
+		RunData.close();
+		Sleep(1000);
+		std::remove("C:\\Users\\Ayotunde\\Documents\\Visual Studio 2013\\Projects\\fann-master\\fann-master\\examples\\RuntimeData.txt");
+	}
+
+	void Translate_Characteristics(int Data[datasize])
+	{
+		// Function-specific Variables
+		//const int dataSize = 240;
+		const int no_gestures = 12, no_pods = 8; std::string gesture = "Rest";
+
+		float Rest = 0.0, Thumb = 0.0, Index = 0.0, Middle = 0.0, Ring = 0.0, Pinky = 0.0, wrist = 0.0;
+		int Pod0 = 0, Pod1 = 0, Pod2 = 0, Pod3 = 0, Pod4 = 0, Pod5 = 0, Pod6 = 0, Pod7 = 0;
+		int checkvalues[] = { 4, 5, 6, 7, 8 };
+		float Percents[5][no_pods]; float finalvalue[7];
+
+		// GR Approach
+		// 2. Compute percentages for values between 4 through 8
+		for (int i = 0; i < sizeof(checkvalues) / sizeof(checkvalues[0]); i++){
+			for (int j = 0; j < datasize; j++){            // Score no_times data is less than 8
+				if (input_Char[j] < checkvalues[i]){
+					if (j == 0 || j % 8 == 0)  Pod0++;                 // Pod 0
+					else if (j == 1 || (j - 1) % 8 == 0)  Pod1++;        // Pod 1
+					else if (j == 2 || (j - 2) % 8 == 0)  Pod2++;        // Pod 2
+					else if (j == 3 || (j - 3) % 8 == 0)  Pod3++;        // Pod 3
+					else if (j == 4 || (j - 4) % 8 == 0)  Pod4++;        // Pod 4
+					else if (j == 5 || (j - 5) % 8 == 0)  Pod5++;        // Pod 5
+					else if (j == 6 || (j - 6) % 8 == 0)  Pod6++;        // Pod 6
+					else Pod7++;                                         // Pod 7
+				}
+			}
+
+			// Compute percent based off no_times
+			Percents[i][0] = (Pod0*no_pods * 100) / datasize; Percents[i][1] = (Pod1*no_pods * 100) / datasize; Percents[i][2] = (Pod2*no_pods * 100) / datasize;
+			Percents[i][3] = (Pod3*no_pods * 100) / datasize; Percents[i][4] = (Pod4*no_pods * 100) / datasize; Percents[i][5] = (Pod5*no_pods * 100) / datasize;
+			Percents[i][6] = (Pod6*no_pods * 100) / datasize; Percents[i][7] = (Pod7*no_pods * 100) / datasize;
+
+			// Reset Pod values
+			Pod0 = 0, Pod1 = 0, Pod2 = 0, Pod3 = 0, Pod4 = 0, Pod5 = 0, Pod6 = 0, Pod7 = 0;
+		}
+
+		// 3. Weight/Decision Branches
+		bool Flag = 0;
+		// Branch 1
+		for (int i = 0; i < 6; i++){
+			if (Percents[4][i + 1] < 90.0) Flag = 1;
+		} if (!Flag) Rest = 2.0;
+
+		// Branch 2
+		if (Percents[4][2] >= 90.0 && Percents[4][3] >= 90.0){
+
+			if (Percents[4][5]> 85.0) Thumb += 1.0;
+
+			else{
+				if (Percents[4][0] > 45.0 && Percents[4][6] > 45.0){
+					if (Percents[4][5] < 65.0) Ring += 1.0;
+					else
+					{
+						if (Percents[4][4] > 84.0) {
+							if (Percents[4][1] < 84) Index += 1;
+							else Middle += 1;
+						}
+						else{
+							Middle += 0.75, Index += 0.25;
+							if (Percents[4][1] > 84.0)
+								Middle += 1.0;
+						}
+					}
+				}
+				else{
+					Pinky += 0.8; Ring += 0.4; Middle += 0.1; Index += 0.1;
+				}
+			}
+		}
+		else{
+			wrist += 0.9;
+		}
+
+		// Insert more Branches here
+
+
+		// 4. Select based on final Weight values
+		float temp = 0.0; int largestindex = 0;
+		finalvalue[0] = Rest; finalvalue[1] = Rest; finalvalue[2] = Thumb; finalvalue[3] = Index; finalvalue[4] = Middle; finalvalue[5] = Ring; finalvalue[6] = Pinky; finalvalue[6] = wrist;
+		for (int i = 0; i < 7; i++)
+		{
+			if (temp < finalvalue[i]){
+				temp = finalvalue[i]; largestindex = i;
+			}
+		}
+
+		if (largestindex == 0) gesture = "Rest";
+		if (largestindex == 1) gesture = "Thumb";
+		if (largestindex == 2) gesture = "Index";
+		if (largestindex == 3) gesture = "Middle";
+		if (largestindex == 4) gesture = "Ring";
+		if (largestindex == 5) gesture = "Pinky";
+		if (largestindex == 6) gesture = "Wrist";
+
+		// Print gesture
+		system("cls");
+		std::cout << "Gesture is: " << gesture << "!\n";
+		Sleep(1000);
+	}
+
+	void Translate_Net(int Data[datasize])
+	{
 		// Call Myo_Fann recognition
-		fann_type gesture_Val = Myo_Test(input);
+		fann_type gesture_Val = Myo_Test(input_Net);
 
 		// Translate Myo_FANN gesture recognition efforts
 		system("cls");
 		std::cout << gesture_Val;
 		if (gesture_Val <= 0.1) gesture = "Re";
-		if (gesture_Val > 0.1 && gesture_Val < 0.3) gesture = "T"; 
+		if (gesture_Val > 0.15 && gesture_Val < 0.3) gesture = "T"; 
 		if (gesture_Val > 0.3 && gesture_Val < 0.5)	gesture = "I"; 
 		if (gesture_Val > 0.5 && gesture_Val < 0.7)	gesture = "M"; 
 		if (gesture_Val > 0.7 && gesture_Val < 0.85)gesture = "R"; 
 		if (gesture_Val > 0.85 && gesture_Val < 0.95)	gesture = "P"; 
 		if (gesture_Val >= 0.95)	gesture = "H";
 		
-		if (gesture != prev_gesture){
-			if (gesture == "Re") std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Rest state! **\n";
-			if (gesture == "T") std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Thumb Finger! **\n";
-			if (gesture == "I") std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t  ** Index Finger! **\n";
-			if (gesture == "M")std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Middle Finger! **\n";
-			if (gesture == "R")std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Ring Finger! **\n";
-			if (gesture == "P")std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Pinky Finger! **\n";
-			if (gesture == "H") std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Hand Gesture! **\n";
-		 }
-		prev_gesture = gesture;
-		Sleep(2000);
+		//if (gesture != prev_gesture){
+			if (gesture == "Re") std::cout << "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Rest state! **\n";
+			if (gesture == "T") std::cout << "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Thumb Finger! **\n";
+			if (gesture == "I") std::cout << "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t  ** Index Finger! **\n";
+			if (gesture == "M")std::cout << "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Middle Finger! **\n";
+			if (gesture == "R")std::cout << "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Ring Finger! **\n";
+			if (gesture == "P")std::cout << "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Pinky Finger! **\n";
+			if (gesture == "H") std::cout << "\n\n\n\n\n\n\n\n\n\n\t\t\t\t\t   ** Hand Gesture! **\n";
+		 //}
+		//prev_gesture = gesture;
+		Sleep(1000);
 	}
+
+
 };
 
 int main(int argc, char** argv)
 {
-	// Define Calibration mode test-gestures
+	// Define Calibration(Cal.) mode test-gestures
 	std::string gestures[12] = { "*REST/RELAX* position", "*(THUMB)* contraction", "*REST/RELAX* position", "*(INDEX fing.)* contraction", "*REST/RELAX* position",
 		"*(MIDDLE fing.)* contraction", "*REST/RELAX* position", "*(RING fing.)* contraction", "*REST/RELAX* position",
 		"*(PINKY fing.)* contraction", "*REST/RELAX* position", "*(HAND)* contraction" };
+	std::string mode, GR_method = "Characteristics";
 
 	// We catch any exceptions that might occur below -- see the catch statement for more details
 	try {
 		system("mode 650");   // Full screen mode
 		// First, we create a Hub without any application identifier (I deemed it unnecessary), the Hub provides access to one or more Myos
-		myo::Hub hub("");
+		myo::Hub hub("com.thalmic.myo");
+		//hub.a
 
-		std::cout << "\t\t\t\t Attempting to find HU Terminator Myo..." << std::endl;
+		std::cout << "\t\t\t\t\t\t\t\t Attempting to find HU Terminator Myo..." << std::endl;
 
 		// Next, we attempt to find our Myo. If it's already paired in Myo Connect, this will return our Myo immediately
 		// waitForMyo() takes a timeout value in milliseconds
@@ -224,7 +380,7 @@ int main(int argc, char** argv)
 		}
 
 		// We've found our Myo!
-		std::cout << "\t\t\t\t Now connected to HU Terminator Myo! " << std::endl << std::endl;
+		std::cout << "\t\t\t\t\t\t\t\t Now connected to HU Terminator Myo! " << std::endl << std::endl;
 
 		// Next we enable EMG streaming on the found Myo
 		myo->setStreamEmg(myo::Myo::streamEmgEnabled);
@@ -249,16 +405,17 @@ int main(int argc, char** argv)
 		wcscpy_s(cfi.FaceName, L"Consolas");
 		SetCurrentConsoleFontEx(GetStdHandle(STD_OUTPUT_HANDLE), FALSE, &cfi);
 
-		std::cout << "\n\n\n\n\n\n\t\t    Welcome to Terminator Arm Gen. (1.0) !" << std::endl;
-		std::cout << "\t  Allow a couple seconds while Terminator Myo warms up to arm... " << std::endl << std::endl;
+		std::cout << "\n\n\n\n\n\n\t\t\t\t\t\t   Welcome to Terminator Arm Gen. (1.0) !" << std::endl;
+		std::cout << "\t\t\t\t\t  Allow a couple seconds while Terminator Myo warms up to arm... " << std::endl << std::endl;
 		Sleep(5000);             // suspend execution of current/active thread for time-argument
 
 		// If Calibration mode is enabled, Train Cal. Network
-		if (TerminatorGR.toCalibrate){ 
+		if (TerminatorGR.toCalibrate){
+			mode = "Calibration";
 			system("cls");
-			std::cout << "\n\n\n\n\n\n\n\\n\t\t\t\t   Please follow the instructions to perform CALIBRATION!" << std::endl;
+			std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t   Please follow the instructions to perform CALIBRATION!" << std::endl;
 			Sleep(5000);             // suspend execution of current/active thread for time-argument
-			
+
 			// Perform Calibration
 			for (int i = 0; i < sizeof(gestures) / sizeof(*gestures); i++){
 				system("cls");
@@ -274,11 +431,11 @@ int main(int argc, char** argv)
 				{
 					// In each iteration of our main loop, we run the Myo event loop for a set number of milliseconds
 					// In this case, we wish to update our display 50 times a second. (Myo provides EMG at 200Hz and IMU data at 50Hz and is unaffected by display rates)
-					hub.run(1000/20); //hub.runOnce();
-					
+					hub.run(1000 / 20); //hub.runOnce();
+
 					// After processing events, we call the writeData() function to write new data to our outfile
 					collector.writeCalData(gestures[i]);
-					
+
 					// Update time for iteration purposes
 					currentTime = GetTickCount() - startTime;
 				}
@@ -287,32 +444,45 @@ int main(int argc, char** argv)
 
 			// Train net with logged data
 			system("cls"); std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t  Data logging complete!\n"; Sleep(1000);
-			system("cls"); std::cout << "\t\t\t\tNow calibrating logged user data...\nThis should not last more than two (2) mins.\n\n\n\n\n\n"; Sleep(1000);
+			system("cls"); std::cout << "\n\n\n\n\n\n\n\n   Now calibrating logged user data...\nThis should only last about two (2) mins.\n\n\n\n\n\n"; Sleep(1000);
 			TerminatorGR.Myo_Train();
-			system("cls"); std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t  User Calibration complete! \n\n"; Sleep(1000);
+			system("cls"); std::cout << "\n\n\n\n\n\n\n\n\n\t\t\t\t\t  User Calibration complete! \n\n"; Sleep(1000);
+			system("cls"); std::cout << "\n\n\n\n\n\n\n\n\n\t\t\t\t\t  Network Saved! \n\n"; Sleep(1000);
 			collector.DeleteCalFile();  // .Net is trained, delete Cal_Datafile for next user
-			system("cls"); std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t  Network Saved! Deleting Cal. file... \n\n"; Sleep(1000);
-			
+			system("cls"); std::cout << "Deleting Cal. file... \n\n"; Sleep(800);
+
 			// Exit calibration, Ready for real-time data
 		}
+		else
+			mode = "User_App";
 			
-		
 		// Finally we enter our Real-time loop.
-		Listen:
+	Listen:
+		system("cls");
+		std::cout << "\n\n\n\t\t\t\t\t\t\tMode: " << mode << "\n\t\t\t\t\t\t\tGR_method: " << GR_method << " \n"; 
+		std::cout << "\t\t\t\t\t\t\tTerminator Myo is ready to listen for gestures! \n"; Sleep(2000);
+		system("cls");
 		while (collector.onArm){
-				// In each iteration of our main loop, we run the Myo event loop for a set number of milliseconds
-				// In this case, we wish to update our display 50 times a second. (Myo provides EMG at 200Hz and IMU data at 50Hz and is unaffected by display rates)
+				
+				// Run Myo hub
 				hub.run(1000 / 20);
 
-				// After processing events, we call the writeData() function to write new data to our outfile
+				// After processing events, we call the writeData() function to write new data to our outfile/array
 				collector.writeRunData();
 
-				TerminatorGR.TranslateGesture(collector.DataArray);
+				// Parse input data stream
+				TerminatorGR.ParseData(GR_method);
+
+				// Call desired GR_method
+				if (GR_method == "Neural Net")
+				TerminatorGR.Translate_Net(collector.DataArray);
+				else
+			    TerminatorGR.Translate_Characteristics(collector.DataArray);
 	}
 		
-		while (collector.onArm == false){
-			system("cls");  std::cout << "\n\n\n \t\tPlease re-sync Terminator Myo for best results!";
-		}
+		//while (collector.onArm == false){
+			//system("cls");  std::cout << "\n\n\n \t\tPlease re-sync Terminator Myo for best results!";
+		//}
 		goto Listen;
 
 		// Tidy up & End program
