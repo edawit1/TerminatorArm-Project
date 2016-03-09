@@ -92,7 +92,7 @@ int main()
 			}
 		}
 		else{
-			wrist += 2.0;
+			wrist += 0.9;
 		}
 
 
