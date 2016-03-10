@@ -57,7 +57,7 @@ public:
 	// when it's moved around on the arm.
 	void onArmUnsync(myo::Myo* myo, uint64_t timestamp)
 	{
-		system("cls"); std::cout << "ARM UN-SYNC!!" << std::endl;
+		system("cls"); std::cout << "\n\n\n\n\t\t\t\t\t\tTerminator Myo UN-SYNC!!" << std::endl;
 		onArm = false;
 		Sleep(5000);
 	};
@@ -175,8 +175,7 @@ public:
 			std::string emgString = oss.str();
 			DataArray[j] = static_cast<int>(emgSamples[i]); j++;
 			}
-			}*/
-		
+			}*/	
 	}
 
 	void DeleteCalFile()
@@ -225,7 +224,7 @@ public:
 		//const int dataSize = 240;
 		const int no_gestures = 12, no_pods = 8; std::string gesture = "Rest";
 
-		float Rest = 0.0, Thumb = 0.0, Index = 0.0, Middle = 0.0, Ring = 0.0, Pinky = 0.0, wrist = 0.0;
+		float Rest = 0.0, Thumb = 0.0, Index = 0.0, Middle = 0.0, Ring = 0.0, Pinky = 0.0, Wrist = 0.0;
 		int Pod0 = 0, Pod1 = 0, Pod2 = 0, Pod3 = 0, Pod4 = 0, Pod5 = 0, Pod6 = 0, Pod7 = 0;
 		int checkvalues[] = { 4, 5, 6, 7, 8 };
 		float Percents[5][no_pods]; float finalvalue[7];
@@ -257,31 +256,28 @@ public:
 
 		// 3. Weight/Decision Branches
 		bool Flag = 0;
-		// Branch 1
+		// Branch 1 (Rest)
 		for (int i = 0; i < 6; i++){
 			if (Percents[4][i + 1] < 90.0) Flag = 1;
-		} if (!Flag) Rest = 2.0;
+		} if (!Flag) Rest = 4.0;
 
-		// Branch 2
+		// Branch 2  (Thumb, Index, Middle, Ring, Pinky, Wrist)
 		if (Percents[4][2] >= 90.0 && Percents[4][3] >= 90.0){
 
 			if (Percents[4][5]> 85.0) Thumb += 1.0;
+			
+			else if (Percents[4][5] < 65.0) Ring += 1.0;                   // ** Took Ring out to here
 
 			else{
-				if (Percents[4][0] > 45.0 && Percents[4][6] > 45.0){
-					if (Percents[4][5] < 65.0) Ring += 1.0;
-					else
-					{
+				if (Percents[4][0] > 45.0 && Percents[4][6] > 80.0){       // Changed up stuff in this nest
 						if (Percents[4][4] > 84.0) {
-							if (Percents[4][1] < 84) Index += 1;
-							else Middle += 1;
+							if (Percents[4][1] < 84.0) Index += 1.0;
+							else Middle += 1.0;
 						}
 						else{
-							Middle += 0.75, Index += 0.25;
-							if (Percents[4][1] > 84.0)
-								Middle += 1.0;
+							if (Percents[4][4] > 84.0) Middle += 0.75, Index += 0.25;
+							else Middle += 0.25; Index += 0.75;
 						}
-					}
 				}
 				else{
 					Pinky += 0.8; Ring += 0.4; Middle += 0.1; Index += 0.1;
@@ -289,7 +285,34 @@ public:
 			}
 		}
 		else{
-			wrist += 0.9;
+			Wrist += 0.9;
+		}
+
+		// Branch 3 (Ring, Wrist) ** Methinks this oscillates result!
+		if (Percents[4][5] <= 60)
+		{
+
+			if (Percents[4][4] < 58.0 && Percents[4][3] > 80.0)
+				Ring += 1.0;
+			else if (Percents[4][4] < 58.0 && Percents[4][3] < 80.0)
+				Wrist += 1.0;
+			/*if (Percents[4][4] > 55)
+				Ring += 1.0;
+			else
+				Wrist += 1.0;*/
+		}
+
+		// Branch 4 (Thumb, Index, Middle, Ring, Pinky, Wrist)
+		bool PodFlag = 0;
+		for (int i = 1; i < no_pods; i++){
+			if (Percents[4][0] > Percents[4][i])
+				PodFlag = 1;    // Flag is set if Pod 0 is not the smallest
+		}
+		if (!PodFlag){                                      //** Checked only Pod 5 instead of all Pods **
+			if (Percents[4][5] - Percents[4][0] <= 15){
+				if (Percents[4][6] > 70) Ring += 1.0;
+				else Wrist += 1.0;
+			}
 		}
 
 		// Insert more Branches here
@@ -297,7 +320,7 @@ public:
 
 		// 4. Select based on final Weight values
 		float temp = 0.0; int largestindex = 0;
-		finalvalue[0] = Rest; finalvalue[1] = Rest; finalvalue[2] = Thumb; finalvalue[3] = Index; finalvalue[4] = Middle; finalvalue[5] = Ring; finalvalue[6] = Pinky; finalvalue[6] = wrist;
+		finalvalue[0] = Rest; finalvalue[1] = Thumb; finalvalue[2] = Index; finalvalue[3] = Middle; finalvalue[4] = Ring; finalvalue[5] = Pinky; finalvalue[6] = Wrist;
 		for (int i = 0; i < 7; i++)
 		{
 			if (temp < finalvalue[i]){
@@ -305,18 +328,14 @@ public:
 			}
 		}
 
-		if (largestindex == 0) gesture = "Rest";
-		if (largestindex == 1) gesture = "Thumb";
-		if (largestindex == 2) gesture = "Index";
-		if (largestindex == 3) gesture = "Middle";
-		if (largestindex == 4) gesture = "Ring";
-		if (largestindex == 5) gesture = "Pinky";
+		if (largestindex == 0) gesture = "Rest"; if (largestindex == 1) gesture = "Thumb"; if (largestindex == 2) gesture = "Index";
+		if (largestindex == 3) gesture = "Middle"; if (largestindex == 4) gesture = "Ring"; if (largestindex == 5) gesture = "Pinky";
 		if (largestindex == 6) gesture = "Wrist";
 
 		// Print gesture
 		system("cls");
-		std::cout << "Gesture is: " << gesture << "!\n";
-		Sleep(1000);
+		std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t\t\t\tGesture detected: " << gesture << "!\n";
+		//Sleep(1000);
 	}
 
 	void Translate_Net(int Data[datasize])
@@ -347,8 +366,6 @@ public:
 		//prev_gesture = gesture;
 		Sleep(1000);
 	}
-
-
 };
 
 int main(int argc, char** argv)
@@ -366,7 +383,7 @@ int main(int argc, char** argv)
 		myo::Hub hub("com.thalmic.myo");
 		//hub.a
 
-		std::cout << "\t\t\t\t\t\t\t\t Attempting to find HU Terminator Myo..." << std::endl;
+		std::cout << "\t\t\t\t\t\t Attempting to find HU Terminator Myo..." << std::endl;
 
 		// Next, we attempt to find our Myo. If it's already paired in Myo Connect, this will return our Myo immediately
 		// waitForMyo() takes a timeout value in milliseconds
@@ -380,7 +397,7 @@ int main(int argc, char** argv)
 		}
 
 		// We've found our Myo!
-		std::cout << "\t\t\t\t\t\t\t\t Now connected to HU Terminator Myo! " << std::endl << std::endl;
+		std::cout << "\t\t\t\t\t\t Now connected to HU Terminator Myo! " << std::endl << std::endl;
 
 		// Next we enable EMG streaming on the found Myo
 		myo->setStreamEmg(myo::Myo::streamEmgEnabled);
@@ -388,12 +405,12 @@ int main(int argc, char** argv)
 
 		// Next we construct an instance of our DeviceListener, so that we can register it with the Hub
 		DataCollector collector;
-		GestureRec TerminatorGR; // Instance of Terminator Myo_FANN
+		GestureRec TerminatorGR;    // Instance of Terminator Myo_FANN
 
 		// Hub::addListener() takes the address of any object whose class inherits from DeviceListener, and will cause
 		// Hub::run() to send events to all registered device listeners
 		hub.addListener(&collector);
-
+		//hub.
 		// Set console font parameters (change some default cmd properties)
 		CONSOLE_FONT_INFOEX cfi;
 		cfi.cbSize = sizeof cfi;
@@ -450,17 +467,17 @@ int main(int argc, char** argv)
 			system("cls"); std::cout << "\n\n\n\n\n\n\n\n\n\t\t\t\t\t  Network Saved! \n\n"; Sleep(1000);
 			collector.DeleteCalFile();  // .Net is trained, delete Cal_Datafile for next user
 			system("cls"); std::cout << "Deleting Cal. file... \n\n"; Sleep(800);
-
+			
 			// Exit calibration, Ready for real-time data
 		}
 		else
 			mode = "User_App";
 			
 		// Finally we enter our Real-time loop.
-	Listen:
+		Listen:
 		system("cls");
-		std::cout << "\n\n\n\t\t\t\t\t\t\tMode: " << mode << "\n\t\t\t\t\t\t\tGR_method: " << GR_method << " \n"; 
-		std::cout << "\t\t\t\t\t\t\tTerminator Myo is ready to listen for gestures! \n"; Sleep(2000);
+		std::cout << "\n\n\n\t\t\t\t\t\t\tMode:  " << mode << "\n\t\t\t\t\t\t\tGR_method:  " << GR_method << " \n"; 
+		std::cout << "\t\t\t\t\t\tTerminator Myo is now ready to listen for gestures! \n"; Sleep(2000);
 		system("cls");
 		while (collector.onArm){
 				
