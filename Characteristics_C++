@@ -12,8 +12,8 @@ int main()
 	infile.open("inputdata.txt");
 
 	// Function-specific Variables
-		//const int dataSize = 240;
-		const int no_gestures = 12, no_pods = 8; std::string gesture = "Rest";
+		int dataSize = 240;
+		no_pods = 8; std::string gesture = "Rest";
 
 for (int i =0; i < dataSize; i++)
 	{
@@ -105,11 +105,7 @@ for (int i =0; i < dataSize; i++)
 				PodFlag = 1;    // Flag is set if Pod 0 is not the smallest
 		}
 		if (!PodFlag){                                      //** Checked only Pod 5 instead of all Pods **
-			if (Percents[4][5] - Percents[4][0] <= 15){
-				if (Percents[4][6] > 70) Ring += 1.0;
-				else Wrist += 1.0;
-			}
-		}
+			if (abs(Percents[4][5] - Percents[4][0] <= 15)) Ring += 1.0;
 
 		// Insert more Branches here
 
