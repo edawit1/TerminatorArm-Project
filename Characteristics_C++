@@ -58,7 +58,7 @@ for (int i =0; i < dataSize; i++)
 		} if (!Flag) Rest = 4.0;
 
 		// Branch 2  (Thumb, Index, Middle, Ring, Pinky, Wrist)
-		if (Percents[4][2] >= 90.0 && Percents[4][3] >= 90.0){
+		if (Percents[4][3] >= 84.0){
 
 			if (Percents[4][5]> 85.0) Thumb += 1.0;
 			
@@ -76,7 +76,7 @@ for (int i =0; i < dataSize; i++)
 						}
 				}
 				else{
-					Pinky += 0.8; Ring += 0.4; Middle += 0.1; Index += 0.1;
+					Pinky += 0.8; Middle += 0.1; Index += 0.1;
 				}
 			}
 		}
