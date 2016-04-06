@@ -1,115 +1,179 @@
+/*
+ * characteristics.cpp
+ *
+ *  Created on: Mar 23, 2016
+ *      Author: edawi
+ */
+
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <math.h>
+#include <Windows.h>
+
+
 
 int main()
 {
 	// Assume this to be a function receiving an array data[240]   i.e an 80-emg x 30-Datalines  array every sec. or so at run-time
 	// To do: Update logic branches. if/else branch of Thumb needs to be completed too!
-	
+
 	std::ifstream infile;
-	infile.open("inputdata.txt");
+	infile.open("C:\\Users\\edawi\\Documents\\inputdata.txt");
 
 	// Function-specific Variables
-		int dataSize = 240;
-		no_pods = 8; std::string gesture = "Rest";
+	const int dataSize = 240;
+	int input_Char[dataSize];
+	const int no_pods = 8; std::string gesture = "Rest";
 
-for (int i =0; i < dataSize; i++)
+	if (infile.fail())
+		std::cout << "Not reading file";
+	for (int i = 0; i < dataSize; i++)
 	{
-	   infile >> input_Char[i];
-	   if (input_Char[i] < 0) input_Char[i] = sqrt(input_Char[i] *input_Char[i]); 
+		infile >> input_Char[i];
+		if (input_Char[i] < 0) input_Char[i] = sqrt(input_Char[i] * input_Char[i]);
 	}
-		float Rest = 0.0, Thumb = 0.0, Index = 0.0, Middle = 0.0, Ring = 0.0, Pinky = 0.0, Wrist = 0.0;
-		int Pod0 = 0, Pod1 = 0, Pod2 = 0, Pod3 = 0, Pod4 = 0, Pod5 = 0, Pod6 = 0, Pod7 = 0;
-		int checkvalues[] = { 4, 5, 6, 7, 8 };
-		float Percents[5][no_pods]; float finalvalue[7];
+	float Rest = 0.0, Thumb = 0.0, Index = 0.0, Middle = 0.0, Ring = 0.0, Pinky = 0.0, Wrist = 0.0;
+	int Pod0 = 0, Pod1 = 0, Pod2 = 0, Pod3 = 0, Pod4 = 0, Pod5 = 0, Pod6 = 0, Pod7 = 0;
+	int checkvalues[] = { 4, 5, 6, 7, 8 };
+	float Percents[5][no_pods]; float finalvalue[7];
 
-		// GR Approach
-		// 2. Compute percentages for values between 4 through 8
-		for (int i = 0; i < sizeof(checkvalues) / sizeof(checkvalues[0]); i++){
-			for (int j = 0; j < datasize; j++){            // Score no_times data is less than 8
-				if (input_Char[j] < checkvalues[i]){
-					if (j == 0 || j % 8 == 0)  Pod0++;                 // Pod 0
-					else if (j == 1 || (j - 1) % 8 == 0)  Pod1++;        // Pod 1
-					else if (j == 2 || (j - 2) % 8 == 0)  Pod2++;        // Pod 2
-					else if (j == 3 || (j - 3) % 8 == 0)  Pod3++;        // Pod 3
-					else if (j == 4 || (j - 4) % 8 == 0)  Pod4++;        // Pod 4
-					else if (j == 5 || (j - 5) % 8 == 0)  Pod5++;        // Pod 5
-					else if (j == 6 || (j - 6) % 8 == 0)  Pod6++;        // Pod 6
-					else Pod7++;                                         // Pod 7
-				}
+	// GR Approach
+	// 2. Compute percentages for values between 4 through 8
+	for (int i = 0; i < sizeof(checkvalues) / sizeof(checkvalues[0]); i++){
+		for (int j = 0; j < dataSize; j++){            // Score no_times data is less than 8
+			if (input_Char[j] < checkvalues[i]){
+				if (j == 0 || j % 8 == 0)  Pod0++;                 // Pod 0
+				else if (j == 1 || (j - 1) % 8 == 0)  Pod1++;        // Pod 1
+				else if (j == 2 || (j - 2) % 8 == 0)  Pod2++;        // Pod 2
+				else if (j == 3 || (j - 3) % 8 == 0)  Pod3++;        // Pod 3
+				else if (j == 4 || (j - 4) % 8 == 0)  Pod4++;        // Pod 4
+				else if (j == 5 || (j - 5) % 8 == 0)  Pod5++;        // Pod 5
+				else if (j == 6 || (j - 6) % 8 == 0)  Pod6++;        // Pod 6
+				else Pod7++;                                         // Pod 7
 			}
-
-			// Compute percent based off no_times
-			Percents[i][0] = (Pod0*no_pods * 100) / datasize; Percents[i][1] = (Pod1*no_pods * 100) / datasize; Percents[i][2] = (Pod2*no_pods * 100) / datasize;
-			Percents[i][3] = (Pod3*no_pods * 100) / datasize; Percents[i][4] = (Pod4*no_pods * 100) / datasize; Percents[i][5] = (Pod5*no_pods * 100) / datasize;
-			Percents[i][6] = (Pod6*no_pods * 100) / datasize; Percents[i][7] = (Pod7*no_pods * 100) / datasize;
-
-			// Reset Pod values
-			Pod0 = 0, Pod1 = 0, Pod2 = 0, Pod3 = 0, Pod4 = 0, Pod5 = 0, Pod6 = 0, Pod7 = 0;
 		}
 
-		// 3. Weight/Decision Branches
-		bool Flag = 0;
-		// Branch 1 (Rest)
-		for (int i = 0; i < 6; i++){
-			if (Percents[4][i + 1] < 90.0) Flag = 1;
-		} if (!Flag) Rest = 4.0;
+		// Compute percent based off no_times
+		Percents[i][0] = (Pod0*no_pods * 100) / dataSize; Percents[i][1] = (Pod1*no_pods * 100) / dataSize; Percents[i][2] = (Pod2*no_pods * 100) / dataSize;
+		Percents[i][3] = (Pod3*no_pods * 100) / dataSize; Percents[i][4] = (Pod4*no_pods * 100) / dataSize; Percents[i][5] = (Pod5*no_pods * 100) / dataSize;
+		Percents[i][6] = (Pod6*no_pods * 100) / dataSize; Percents[i][7] = (Pod7*no_pods * 100) / dataSize;
 
-		// Branch 2  (Thumb, Index, Middle, Ring, Pinky, Wrist)
-		if (Percents[4][3] >= 84.0){
+		//system("cls");
+		//std::cout << "numpods: " << no_pods << std::endl;
 
-			if (Percents[4][5]> 85.0) Thumb += 1.0;
-			
-			else if (Percents[4][5] < 65.0) Ring += 1.0;                   // ** Took Ring out to here
+		//std::cout << "num0: " << Pod0 << "  datasize:" << dataSize << std::endl;
+		//std::cout << "num1: " << Pod1 << "  datasize:" << dataSize << std::endl;
+		//std::cout << "num2: " << Pod2 << "  datasize:" << dataSize << std::endl;
+		//std::cout << "num3: " << Pod3 << "  datasize:" << dataSize << std::endl;
+		//std::cout << "num4: " << Pod4 << "  datasize:" << dataSize << std::endl;
+		//std::cout << "num5: " << Pod5 << "  datasize:" << dataSize << std::endl;
+		//std::cout << "num6: " << Pod6 << "  datasize:" << dataSize << std::endl;
+		//std::cout << "num7: " << Pod7 << "  datasize:" << dataSize << std::endl;
 
-			else{
-				if (Percents[4][0] > 45.0 && Percents[4][6] > 80.0){       // Changed up stuff in this nest
-						if (Percents[4][4] > 84.0) {
-							if (Percents[4][1] < 84.0) Index += 1.0;
-							else Middle += 1.0;
-						}
-						else{
-							if (Percents[4][4] > 84.0) Middle += 0.75, Index += 0.25;
-							else Middle += 0.25; Index += 0.75;
-						}
+		//std::cout << "Percent0: " << (Pod0*no_pods * 100) / dataSize << std::endl;
+		//std::cout << "Percent1: " << (Pod1*no_pods * 100) / dataSize << std::endl;
+		//std::cout << "Percent2:" << (Pod2*no_pods * 100) / dataSize << std::endl;
+		//std::cout << "Percent3: " << (Pod3*no_pods * 100) / dataSize << std::endl;
+		//std::cout << "Percent4: " << (Pod4*no_pods * 100) / dataSize << std::endl;
+		//std::cout << "Percent5: " << (Pod5*no_pods * 100) / dataSize << std::endl;
+		//std::cout << "Percent6: " << (Pod6*no_pods * 100) / dataSize << std::endl;
+		//std::cout << "Percent7: " << (Pod7*no_pods * 100) / dataSize << std::endl;
+
+		//Sleep(2000);
+		// Reset Pod values
+		Pod0 = 0, Pod1 = 0, Pod2 = 0, Pod3 = 0, Pod4 = 0, Pod5 = 0, Pod6 = 0, Pod7 = 0;
+	}
+
+	// 3. Weight/Decision Branches
+	bool Flag = 0;
+	// Branch 1 (Rest)
+	for (int i = 0; i < 6; i++){
+		if (Percents[4][i + 1] >= 90.0) Flag = 1;
+	} if (!Flag && Percents[4][7] >= 85) Rest = 10.0;
+
+	// Branch 2  (Thumb, Index, Middle, Ring, Pinky, Wrist)
+	if (Percents[4][3] >= 84.0){
+
+		if (Percents[4][5] > 85.0) Thumb += 1.0;
+
+		else if (Percents[4][5] < 70.0) Ring += 1.0;                   // ** Took Ring out to here
+
+		else{
+			if (Percents[4][0] > 45.0 && Percents[4][6] > 80.0){       // Changed up stuff in this nest
+				if (Percents[4][4] > 84.0) {
+					if (Percents[4][1] < 84.0) Index += 1.0;
+					else Middle += 1.0;
 				}
 				else{
-					Pinky += 0.8; Middle += 0.1; Index += 0.1;
+					if (Percents[4][4] > 84.0) Middle += 0.75, Index += 0.25;
+					else Middle += 0.25; Index += 0.75;
 				}
 			}
+			else{
+				Pinky += 0.8; Middle += 0.1; Index += 0.1;
+			}
 		}
-		else{
-			Wrist += 0.9;
-		}
+	}
+	else{
+		Wrist += 0.9;
+	}
 
-		// Branch 3 (Ring, Wrist) ** Methinks this oscillates result!
-		if (Percents[4][5] <= 60)
-		{
+	// Branch 3 (Ring, Wrist) ** Methinks this oscillates result!
+	if (Percents[4][5] <= 60)
+	{
 
-			if (Percents[4][4] < 58.0 && Percents[4][3] > 80.0)
-				Ring += 1.0;
-			else if (Percents[4][4] < 58.0 && Percents[4][3] < 80.0)
-				Wrist += 1.0;
-			/*if (Percents[4][4] > 55)
-				Ring += 1.0;
+		if (Percents[4][4] < 58.0 && Percents[4][3] > 80.0)
+			Ring += 1.0;
+		else if (Percents[4][4] < 58.0 && Percents[4][3] < 80.0)
+			Wrist += 1.0;
+		if (Percents[4][4] > 55)
+			Ring += 1.0;
 			else
-				Wrist += 1.0;*/
-		}
+			Wrist += 1.0;
+	}
 
-		// Branch 4 (Thumb, Index, Middle, Ring, Pinky, Wrist)
-		bool PodFlag = 0;
-		for (int i = 1; i < no_pods; i++){
-			if (Percents[4][0] > Percents[4][i])
-				PodFlag = 1;    // Flag is set if Pod 0 is not the smallest
-		}
-		if (!PodFlag){                                      //** Checked only Pod 5 instead of all Pods **
-			if (abs(Percents[4][5] - Percents[4][0] <= 15)) Ring += 1.0;
+	// Branch 4 (Thumb, Index, Middle, Ring, Pinky, Wrist)
+	bool PodFlag = 0;
+	for (int i = 1; i < no_pods; i++){
+		if (Percents[4][0] > Percents[4][i])
+			PodFlag = 1;    // Flag is set if Pod 0 is not the smallest
+	}
+	if (!PodFlag)                                    //** Checked only Pod 5 instead of all Pods **
+		if (abs(Percents[4][5] - Percents[4][0]) <= 10) Ring += 1.0;
+
+	// Branch 5 (Wrist)
+	if (abs(Percents[4][1] - Percents[4][6]) >= 15) Wrist += 1.0;
+
+	// Branch 6 (Thumb)
+	if (abs(Percents[4][2] - Percents[4][5]) <= 8) Thumb += 1.0;
+
+	// Branch 7 (Pinky, Wrist)
+	if (abs(Percents[4][6] - Percents[4][7]) <= 6) Wrist += 0.8; Pinky += 0.3;
+
+	// Branch 8 (Index)
+	if (abs(Percents[4][5] - Percents[4][7]) <= 6) Index += 1.0;
+
+	// Branch 9 (Ring,Wrist)
+	if (abs(Percents[4][1] - Percents[4][5]) >= 14)
+		if (Percents[4][70] > 55) Ring += 1.0;
+		else Wrist += 1.0;
+	
+	// Branch 10 (Thumb)
+	if ((Percents[4][3] - Percents[4][5]) <= 6) Thumb += 1.0;
+	
+	// Branch 11 (Anti-Wrist)
+	if ((Percents[4][3] >70 && Percents[4][5] >70 && Percents[4][6] >70 && Percents[4][7] >70) <= 6) Wrist -= 3.0;
+
+	// Branch 12 (Index,Middle,Wrist)
+	if (abs(Percents[4][1] - Percents[4][7]) >= 10)
+		if (Percents[4][4] >= 70) Index += 0.3, Middle += 1.0;
+		else
+			Wrist += 1.0;
 
 		// Insert more Branches here
 
-
+		
 		// 4. Select based on final Weight values
 		float temp = 0.0; int largestindex = 0;
 		finalvalue[0] = Rest; finalvalue[1] = Thumb; finalvalue[2] = Index; finalvalue[3] = Middle; finalvalue[4] = Ring; finalvalue[5] = Pinky; finalvalue[6] = Wrist;
@@ -127,8 +191,27 @@ for (int i =0; i < dataSize; i++)
 		// Print gesture
 		system("cls");
 		std::cout << "\n\n\n\n\n\n\n\n\t\t\t\t\t\t\t\tGesture detected: " << gesture << "!\n";
+		std::cout << "Pod0: " << Percents[4][0] << std::endl;
+		std::cout << "Pod1: " << Percents[4][1] << std::endl;
+		std::cout << "Pod2: " << Percents[4][2] << std::endl;
+		std::cout << "Pod3: " << Percents[4][3] << std::endl;
+		std::cout << "Pod4: " << Percents[4][4] << std::endl;
+		std::cout << "Pod5: " << Percents[4][5] << std::endl;
+		std::cout << "Pod6: " << Percents[4][6] << std::endl;
+		std::cout << "Pod7: " << Percents[4][7] << std::endl << std::endl;
 
-	// End program
-	std::cin.get();
-	return 0;
+		std::cout << "Rest: " << Rest << std::endl;
+		std::cout << "Thumb: " << Thumb << std::endl;
+		std::cout << "Index: " << Index << std::endl;
+		std::cout << "Middle: " << Middle << std::endl;
+		std::cout << "Ring: " << Ring << std::endl;
+		std::cout << "Pinky: " << Pinky << std::endl;
+		std::cout << "Wrist: " << Wrist << std::endl;
+
+
+		
+		// End program
+		Sleep(1000000);
+
+		return 0;
 }
